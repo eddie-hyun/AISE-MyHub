@@ -1,4 +1,4 @@
-# MyHub — 실행 방법
+# 실행 방법
 
 온라인 이력서. **터미널 2개**를 켜면 됩니다.
 
@@ -45,7 +45,7 @@ npm run dev
 ✅ 터미널에 뜨는 `http://localhost:5173/` 주소를 브라우저에서 엽니다.
 (5173이 사용 중이면 5174 등으로 자동으로 올라갑니다. **찍힌 주소를 쓰세요.**)
 
-> 📱 **휴대폰 등 다른 기기에서 보고 싶다면** — `frontend/vite.config.ts` 의 `host: '0.0.0.0'` 주석을 해제하세요. 자세한 내용과 주의사항은 [Step 3 설명서](docs/guide/step3_react_frontend.md)에 있습니다.
+> 📱 **휴대폰 등 다른 기기에서 보고 싶다면** — `frontend/vite.config.ts` 의 `host: '0.0.0.0'` 주석을 해제하세요. 자세한 내용과 주의사항은 [Step 3 설명서](step3_react_frontend.md)에 있습니다.
 
 ---
 
@@ -157,15 +157,15 @@ npm run gen:api
 
 ## 문제가 생기면
 
-각 단계 설명서에 **증상별 트러블슈팅**이 정리돼 있습니다.
+각 단계 설명서에 **증상별 트러블슈팅**이 정리돼 있습니다. 전체 진행 과정을 한눈에 보려면 [개발 여정 타임라인](steps.html)을 여세요.
 
 | 문서 | 다루는 문제 |
 |---|---|
-| [Step 1](docs/guide/step1_backend_supabase.md) | 포트 충돌, `.env` 못 찾음, DB 접속 실패, 경로 슬래시 |
-| [Step 2](docs/guide/step2_first_table_api.md) | `uvicorn` 명령 없음, 패키지 못 찾음, 권한/RLS |
-| [Step 3](docs/guide/step3_react_frontend.md) | `npm` 위치, 포트 번호, 타입 생성 실패, CORS |
-| [Step 4](docs/guide/step4_login_and_edit.md) | 로그인 안 됨, 세션 만료, `.env` 특수문자, 쿠키·XSS·SQL 인젝션 |
-| [Step 5](docs/guide/step5_orm_sqlalchemy.md) | DB 연결 실패, 드라이버 이름, 컬럼 추가가 반영 안 됨, ORM |
+| [Step 1](step1_backend_supabase.md) | 포트 충돌, `.env` 못 찾음, DB 접속 실패, 경로 슬래시 |
+| [Step 2](step2_first_table_api.md) | `uvicorn` 명령 없음, 패키지 못 찾음, 권한/RLS |
+| [Step 3](step3_react_frontend.md) | `npm` 위치, 포트 번호, 타입 생성 실패, CORS |
+| [Step 4](step4_login_and_edit.md) | 로그인 안 됨, 세션 만료, `.env` 특수문자, 쿠키·XSS·SQL 인젝션 |
+| [Step 5](step5_orm_sqlalchemy.md) | DB 연결 실패, 드라이버 이름, 컬럼 추가가 반영 안 됨, ORM |
 
 ### 가장 흔한 두 가지
 
@@ -191,10 +191,11 @@ project-root/
 │   └── requirements.txt
 ├── frontend/          화면 (React) — 포트 5173
 │   └── src/
-│       ├── api/           백엔드 호출 + 자동 생성 타입
-│       ├── components/    편집 도구 (제자리 입력칸 · 도구막대 · 로그인)
-│       └── routes/        화면 (Cv.tsx — 읽기와 편집이 한 화면)
+│       ├── api/           백엔드 호출 + 자동 생성 타입 (client.ts · schema.d.ts · types.ts)
+│       ├── App.tsx        화면 전체 (읽기와 제자리 편집이 한 화면)
+│       └── index.css
 └── docs/
-    ├── guide/         단계별 설명서
-    └── architecture/  아키텍처 성장 다이어그램 (.excalidraw)
+    ├── README.md      이 문서
+    ├── steps.html     단계별 진행 상황 타임라인
+    └── stepN_*.md/html 단계별 설명서 (Step 1~5)
 ```
