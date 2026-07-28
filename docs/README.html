@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MyHub — 실행 방법</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --bg-soft:#f7f8fa; --bg-code:#f4f5f7;
+    --fg:#1b1f24; --fg-soft:#5b6570; --fg-faint:#8b949e;
+    --line:#e3e6ea; --line-strong:#cfd4da;
+    --accent:#2f7d5d; --accent-bg:#eef7f2; --accent-line:#c4e2d3;
+    --warn:#946200;  --warn-bg:#fdf6e6;   --warn-line:#ecd9a8;
+    --danger:#a8352c;--danger-bg:#fdf0ee; --danger-line:#f2cec9;
+    --info:#245ea8;  --info-bg:#eef3fb;   --info-line:#c9dbf3;
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"D2Coding",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --bg-soft:#1b1f23; --bg-code:#1e2328;
+      --fg:#e7eaee; --fg-soft:#a4adb8; --fg-faint:#7b8592;
+      --line:#2a2f36; --line-strong:#3a414a;
+      --accent:#5fbf92; --accent-bg:#16241e; --accent-line:#2c4a3c;
+      --warn:#e0b155;  --warn-bg:#241f14;  --warn-line:#4a3d22;
+      --danger:#e8837a;--danger-bg:#261917; --danger-line:#4d302c;
+      --info:#77aef0;  --info-bg:#151f2c;  --info-line:#28405c;
+    }
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:"Noto Sans KR",sans-serif;
+    font-size:16px; line-height:1.75; word-break:keep-all;
+  }
+  .wrap{width:80%; min-width:340px; max-width:52rem; margin:0 auto; padding:44px 0 80px}
+  @media (max-width:900px){ .wrap{width:92%; padding:28px 0 56px} }
+
+  header{border-bottom:2px solid var(--line-strong); padding-bottom:20px; margin-bottom:8px}
+  h1{font-size:1.9rem; margin:0 0 8px; letter-spacing:-.02em; font-weight:700}
+  .lede{color:var(--fg-soft); margin:0; font-size:.98rem}
+
+  h2{font-size:1.2rem; margin:44px 0 14px; letter-spacing:-.01em; font-weight:700; display:flex; align-items:center; gap:11px}
+  .num{
+    flex:none; width:26px; height:26px; border-radius:50%;
+    background:var(--accent); color:var(--bg);
+    display:grid; place-items:center; font-size:.85rem; font-weight:700;
+  }
+  h3{font-size:1rem; margin:26px 0 9px; font-weight:700}
+  p{margin:0 0 13px}
+  a{color:var(--accent)}
+
+  pre{
+    background:var(--bg-code); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; overflow-x:auto; margin:0 0 14px; line-height:1.6;
+  }
+  code{font-family:var(--mono); font-size:.86em}
+  pre code{font-size:.85rem; white-space:pre}
+  :not(pre) > code{background:var(--bg-code); border:1px solid var(--line); border-radius:5px; padding:.1em .38em}
+
+  .pre-wrap{position:relative; margin:0 0 14px}
+  .pre-wrap pre{margin:0}
+  .copy{
+    position:absolute; top:7px; right:7px;
+    font-family:"Noto Sans KR",sans-serif; font-size:.72rem; font-weight:500;
+    padding:4px 10px; border-radius:6px; cursor:pointer; line-height:1.5;
+    border:1px solid var(--line-strong); background:var(--bg); color:var(--fg-soft);
+    opacity:0; transition:opacity .15s, color .15s, border-color .15s;
+  }
+  .pre-wrap:hover .copy, .copy:focus{opacity:1}
+  .copy:hover{color:var(--accent); border-color:var(--accent)}
+  .copy.done{color:var(--accent); border-color:var(--accent); opacity:1}
+  @media (hover:none){ .copy{opacity:.65} }
+
+  .tw{overflow-x:auto; margin:0 0 16px; border:1px solid var(--line); border-radius:10px}
+  table{border-collapse:collapse; width:100%; font-size:.92rem; min-width:300px}
+  th,td{text-align:left; padding:10px 14px; border-bottom:1px solid var(--line); vertical-align:top}
+  thead th{background:var(--bg-soft); font-size:.85rem; color:var(--fg-soft); white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+
+  .box{
+    --bx:var(--info); --bx-bg:var(--info-bg); --bx-line:var(--info-line);
+    border:1px solid var(--bx-line); border-left:3px solid var(--bx);
+    background:var(--bx-bg); border-radius:4px 12px 12px 4px;
+    padding:15px 20px 16px; margin:0 0 18px;
+  }
+  .box .t{font-weight:700; font-size:.9rem; color:var(--bx); margin:0 0 7px}
+  .box p{margin:0 0 9px; font-size:.93rem}
+  .box > :last-child{margin-bottom:0}
+  .box.ok  {--bx:var(--accent); --bx-bg:var(--accent-bg); --bx-line:var(--accent-line)}
+  .box.warn{--bx:var(--warn);   --bx-bg:var(--warn-bg);   --bx-line:var(--warn-line)}
+
+  details{
+    border:1px solid var(--line); border-radius:12px;
+    background:var(--bg-soft); margin:0 0 18px; overflow:hidden;
+  }
+  details > summary{
+    cursor:pointer; list-style:none; padding:13px 18px;
+    font-weight:700; font-size:.94rem; color:var(--accent);
+    display:flex; align-items:center; gap:9px;
+  }
+  details > summary::-webkit-details-marker{display:none}
+  details > summary::before{content:"▸"; transition:transform .15s; display:inline-block}
+  details[open] > summary::before{transform:rotate(90deg)}
+  .d-body{padding:15px 20px 18px; border-top:1px solid var(--line); background:var(--bg)}
+  .d-body > :last-child{margin-bottom:0}
+
+  hr{border:none; border-top:1px solid var(--line); margin:36px 0}
+  .foot{margin-top:48px; padding-top:18px; border-top:1px solid var(--line); color:var(--fg-faint); font-size:.85rem}
+  ul{margin:0 0 14px; padding-left:1.4em}
+  li{margin:5px 0}
+  @media print{ .copy{display:none} details > *{display:block !important} }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>MyHub — 실행 방법</h1>
+  <p class="lede">온라인 이력서. <strong>터미널 2개</strong>를 켜면 됩니다.</p>
+</header>
+
+<h2><span class="num">1</span>백엔드 (파이썬)</h2>
+<p><strong>터미널 1번</strong> — 프로젝트 루트에서:</p>
+<pre><code>cd backend</code></pre>
+
+<p>가상환경 활성화 — <strong>터미널 종류에 맞는 것 하나만</strong></p>
+<div class="tw"><table>
+<thead><tr><th>터미널</th><th>명령</th></tr></thead>
+<tbody>
+<tr><td>cmd</td><td><code>.venv\Scripts\activate</code></td></tr>
+<tr><td>PowerShell</td><td><code>.\.venv\Scripts\Activate.ps1</code></td></tr>
+<tr><td>macOS / Linux</td><td><code>source .venv/bin/activate</code></td></tr>
+</tbody>
+</table></div>
+
+<p>프롬프트 앞에 <strong><code>(.venv)</code></strong> 가 붙으면 성공입니다. 그다음:</p>
+<pre><code>uvicorn main:app --reload --port 8080</code></pre>
+
+<div class="box ok">
+  <p class="t">✅ 성공 신호</p>
+  <p><code>Application startup complete.</code> 가 뜨면 켜진 겁니다.</p>
+</div>
+
+<h2><span class="num">2</span>프론트엔드 (React)</h2>
+<p><strong>터미널 2번</strong> — 프로젝트 루트에서:</p>
+<pre><code>cd frontend</code></pre>
+<pre><code>npm run dev</code></pre>
+
+<div class="box ok">
+  <p class="t">✅ 성공 신호</p>
+  <p>터미널에 뜨는 <code>http://localhost:5173/</code> 주소를 브라우저에서 엽니다.</p>
+  <p>5173이 사용 중이면 5174 등으로 자동으로 올라갑니다. <strong>찍힌 주소를 쓰세요.</strong></p>
+</div>
+
+<blockquote><p>📱 <strong>휴대폰 등 다른 기기에서 보고 싶다면</strong> — <code>frontend/vite.config.ts</code> 의 <code>host: '0.0.0.0'</code> 주석을 해제하세요. 자세한 내용과 주의사항은 <a href="docs/guide/step3_react_frontend.html">Step 3 설명서</a>에 있습니다.</p></blockquote>
+
+<h2><span class="num">3</span>접속 주소</h2>
+<div class="tw"><table>
+<thead><tr><th>주소</th><th>화면</th></tr></thead>
+<tbody>
+<tr><td><code>http://localhost:5173</code></td><td>이력서 (아래 <strong>관리자 로그인</strong> → 그 자리에서 편집)</td></tr>
+<tr><td><code>http://127.0.0.1:8080/docs</code></td><td>API 문서 (직접 테스트 가능)</td></tr>
+</tbody>
+</table></div>
+
+<div class="box">
+  <p class="t">✏️ 편집용 페이지는 따로 없습니다</p>
+  <p>이력서 맨 아래 <strong>관리자 로그인</strong> 을 눌러 비밀코드를 넣으면, <strong>보고 있던 그 화면의 글자를 그대로 눌러서 고칩니다.</strong></p>
+  <p>고친 뒤 위쪽 막대의 <strong>저장</strong> (또는 <code>Ctrl + S</code>) 을 누르면 반영됩니다.</p>
+  <p>예전 주소 <code>http://localhost:5173/admin</code> 으로 들어오면 이력서로 넘어갑니다.</p>
+</div>
+
+<p>끄려면 각 터미널에서 <strong><code>Ctrl + C</code></strong>.</p>
+
+<hr>
+
+<h2>자주 쓰는 것</h2>
+
+<h3>테이블은 서버가 알아서 만듭니다</h3>
+<p><code>backend/models.py</code> 에 정의된 엔티티를 기준으로, <strong>서버가 시작될 때 없는 테이블을 자동으로 생성</strong>합니다. Supabase 에서 SQL 을 실행할 일이 없습니다.</p>
+<pre><code>[init] 테이블 생성 + 잠금: profile
+[init] 초기 데이터 1건 입력</code></pre>
+<p>서버 로그에 이런 줄이 뜨면 새로 만들어진 것이고, 안 뜨면 이미 있다는 뜻입니다.</p>
+
+<h3>데이터베이스를 통째로 초기화하려면</h3>
+<p><code>backend</code> 폴더에서 (<strong>서버를 끄고</strong>):</p>
+<pre><code>python init_db.py --reset</code></pre>
+<div class="box warn">
+  <p class="t">⚠️ 되돌릴 수 없습니다</p>
+  <p>기존 테이블과 데이터가 <strong>모두 사라집니다.</strong> 다시 만들고 초기 데이터 1건을 넣습니다.</p>
+</div>
+
+<h3>백엔드 API를 고쳤다면 → 타입 다시 생성</h3>
+<p><code>frontend</code> 터미널에서 (<strong>백엔드가 켜져 있어야 합니다</strong>):</p>
+<pre><code>npm run gen:api</code></pre>
+<p>이걸 안 하면 프론트엔드에서 <em>"그런 주소 없는데?"</em> 컴파일 에러가 납니다.</p>
+
+<h3>관리자 비밀코드를 잊었다면</h3>
+<p><code>backend/.env</code> 파일의 <code>ADMIN_PASSCODE</code> 를 확인하세요.</p>
+
+<details>
+<summary>처음 설정할 때 (새 컴퓨터에서 받았을 경우)</summary>
+<div class="d-body">
+<h3>백엔드</h3>
+<pre><code>cd backend
+python -m venv .venv</code></pre>
+<p>위 표대로 활성화한 뒤:</p>
+<pre><code>pip install -r requirements.txt</code></pre>
+<p><code>.env</code> 파일 만들기:</p>
+<pre><code>copy .env.example .env
+notepad .env</code></pre>
+<p>Supabase 접속 정보 · <code>ADMIN_PASSCODE</code> · <code>SESSION_SECRET</code> 을 채웁니다.
+<code>SESSION_SECRET</code> 은 아래 명령으로 만듭니다.</p>
+<pre><code>python -c "import secrets; print(secrets.token_hex(32))"</code></pre>
+<blockquote><p><strong>테이블은 따로 만들 필요 없습니다.</strong> 서버를 처음 켜면 <code>models.py</code> 기준으로 자동 생성되고 초기 데이터 1건이 들어갑니다.</p></blockquote>
+
+<h3>프론트엔드</h3>
+<pre><code>cd frontend
+npm install
+npm run gen:api</code></pre>
+</div>
+</details>
+
+<hr>
+
+<h2>문제가 생기면</h2>
+<p>각 단계 설명서에 <strong>증상별 트러블슈팅</strong>이 정리돼 있습니다.</p>
+<div class="tw"><table>
+<thead><tr><th>문서</th><th>다루는 문제</th></tr></thead>
+<tbody>
+<tr><td><a href="docs/guide/step1_backend_supabase.html">Step 1</a></td><td>포트 충돌, <code>.env</code> 못 찾음, DB 접속 실패, 경로 슬래시</td></tr>
+<tr><td><a href="docs/guide/step2_first_table_api.html">Step 2</a></td><td><code>uvicorn</code> 명령 없음, 패키지 못 찾음, 권한/RLS</td></tr>
+<tr><td><a href="docs/guide/step3_react_frontend.html">Step 3</a></td><td><code>npm</code> 위치, 포트 번호, 타입 생성 실패, CORS</td></tr>
+<tr><td><a href="docs/guide/step4_login_and_edit.html">Step 4</a></td><td>로그인 안 됨, 세션 만료, <code>.env</code> 특수문자, 쿠키·XSS·SQL 인젝션</td></tr>
+<tr><td><a href="docs/guide/step5_orm_sqlalchemy.html">Step 5</a></td><td>DB 연결 실패, 드라이버 이름, 컬럼 추가가 반영 안 됨, ORM</td></tr>
+</tbody>
+</table></div>
+
+<div class="box warn">
+  <p class="t">⚠️ 가장 흔한 두 가지</p>
+  <p><strong><code>'uvicorn'은(는) 내부 또는 외부 명령...</code></strong><br>
+  → 가상환경 활성화를 안 했습니다. 프롬프트에 <code>(.venv)</code> 가 있는지 확인하세요.</p>
+  <p><strong><code>npm</code> 명령이 안 먹음</strong><br>
+  → <code>frontend</code> 폴더가 아닙니다. <code>cd frontend</code> 하세요.</p>
+</div>
+
+<hr>
+
+<h2>폴더 구조</h2>
+<pre><code>project-root/
+├── backend/           파이썬 서버 (FastAPI) — 포트 8080
+│   ├── main.py            엔드포인트
+│   ├── db.py              엔진 · 세션 · Base
+│   ├── models.py          ORM 엔티티   (테이블의 모양)
+│   ├── schemas.py         Pydantic DTO (API의 모양)
+│   ├── init_db.py         시작 시 테이블 자동 생성 + seed
+│   ├── .env               내 접속 정보 (깃에 안 올라감)
+│   └── requirements.txt
+├── frontend/          화면 (React) — 포트 5173
+│   └── src/
+│       ├── api/           백엔드 호출 + 자동 생성 타입
+│       └── routes/        화면들 (공개 이력서 / 관리자)
+└── docs/
+    ├── guide/         단계별 설명서
+    └── architecture/  아키텍처 성장 다이어그램 (.excalidraw)</code></pre>
+
+<p class="foot">MyHub · 온라인 이력서</p>
+
+</div>
+
+<script>
+(function(){
+  function fallbackCopy(text, done){
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.setAttribute('readonly','');
+    ta.style.position='fixed'; ta.style.left='-9999px';
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); done(); } catch(e){}
+    document.body.removeChild(ta);
+  }
+  document.querySelectorAll('pre').forEach(function(pre){
+    var wrap = document.createElement('div');
+    wrap.className = 'pre-wrap';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+    var btn = document.createElement('button');
+    btn.type='button'; btn.className='copy'; btn.textContent='복사';
+    btn.addEventListener('click', function(){
+      var code = pre.querySelector('code');
+      var text = code ? code.innerText : pre.innerText;
+      var done = function(){
+        btn.textContent='복사됨'; btn.classList.add('done');
+        setTimeout(function(){ btn.textContent='복사'; btn.classList.remove('done'); },1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text,done); });
+      } else { fallbackCopy(text,done); }
+    });
+    wrap.appendChild(btn);
+  });
+})();
+</script>
+</body>
+</html>

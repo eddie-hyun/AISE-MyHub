@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Step 1 — 파이썬 백엔드와 Supabase 연결하기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --bg-soft:#f7f8fa; --bg-code:#f4f5f7;
+    --fg:#1b1f24; --fg-soft:#5b6570; --fg-faint:#8b949e;
+    --line:#e3e6ea; --line-strong:#cfd4da;
+    --accent:#2f7d5d; --accent-bg:#eef7f2; --accent-line:#c4e2d3;
+    --warn:#946200;  --warn-bg:#fdf6e6;   --warn-line:#ecd9a8;
+    --danger:#a8352c;--danger-bg:#fdf0ee; --danger-line:#f2cec9;
+    --info:#245ea8;  --info-bg:#eef3fb;   --info-line:#c9dbf3;
+    --code-c:#4b8a5a;
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"D2Coding",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --bg-soft:#1b1f23; --bg-code:#1e2328;
+      --fg:#e7eaee; --fg-soft:#a4adb8; --fg-faint:#7b8592;
+      --line:#2a2f36; --line-strong:#3a414a;
+      --accent:#5fbf92; --accent-bg:#16241e; --accent-line:#2c4a3c;
+      --warn:#e0b155;  --warn-bg:#241f14;  --warn-line:#4a3d22;
+      --danger:#e8837a;--danger-bg:#261917; --danger-line:#4d302c;
+      --info:#77aef0;  --info-bg:#151f2c;  --info-line:#28405c;
+      --code-c:#7fb98a;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:"Noto Sans KR",sans-serif;
+    font-size:16px; line-height:1.78;
+    word-break:keep-all; overflow-wrap:anywhere;
+  }
+  .wrap{width:80%; min-width:340px; margin:0 auto; padding:48px 0 96px}
+  @media (max-width:900px){ .wrap{width:92%; padding:32px 0 64px} }
+
+  header{border-bottom:2px solid var(--line-strong); padding-bottom:28px; margin-bottom:36px}
+  .eyebrow{color:var(--accent); font-weight:700; font-size:.82rem; letter-spacing:.09em; text-transform:uppercase; margin:0 0 10px}
+  h1{font-size:2rem; line-height:1.32; margin:0 0 14px; letter-spacing:-.02em; font-weight:700}
+  .lede{color:var(--fg-soft); margin:0; font-size:1rem}
+
+  h2{font-size:1.4rem; margin:60px 0 18px; padding-top:24px; border-top:1px solid var(--line); letter-spacing:-.01em; font-weight:700}
+  h2:first-of-type{border-top:none; padding-top:0}
+  h3{font-size:1.1rem; margin:36px 0 12px; letter-spacing:-.01em; font-weight:700}
+  h4{font-size:.98rem; margin:24px 0 9px; color:var(--fg-soft); font-weight:700}
+  p{margin:0 0 15px}
+  a{color:var(--accent)}
+  strong{font-weight:700}
+
+  .roadmap{background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin:0 0 8px}
+  .rm-row{display:flex; gap:14px; align-items:baseline; padding:7px 0; font-size:.95rem}
+  .rm-row + .rm-row{border-top:1px dashed var(--line)}
+  .rm-badge{flex:none; width:74px; font-weight:700; font-size:.78rem; color:var(--fg-faint); letter-spacing:.04em}
+  .rm-row.now .rm-badge{color:var(--accent)}
+  .rm-row.now{font-weight:700}
+  .rm-now{color:var(--accent); font-size:.8rem; font-weight:700; margin-left:auto; flex:none}
+
+  nav.toc{background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin:28px 0 8px}
+  nav.toc p{font-weight:700; margin:0 0 10px; font-size:.9rem; color:var(--fg-soft)}
+  nav.toc ol{margin:0; padding-left:1.3em; columns:2; column-gap:32px}
+  nav.toc li{margin:3px 0; font-size:.92rem; break-inside:avoid}
+  @media (max-width:640px){ nav.toc ol{columns:1} }
+
+  pre{
+    background:var(--bg-code); border:1px solid var(--line); border-radius:10px;
+    padding:15px 17px; overflow-x:auto; margin:0 0 16px; line-height:1.65;
+  }
+  code{font-family:var(--mono); font-size:.86em}
+  pre code{font-size:.83rem; white-space:pre; font-family:var(--mono)}
+  :not(pre) > code{background:var(--bg-code); border:1px solid var(--line); border-radius:5px; padding:.1em .38em; word-break:break-all}
+  .c{color:var(--code-c)}          /* 코드 주석 */
+
+  /* ── 복사 버튼 ────────────────────────────── */
+  .pre-wrap{position:relative; margin:0 0 16px}
+  .pre-wrap[hidden]{display:none}
+  .pre-wrap pre{margin:0}
+  .copy{
+    position:absolute; top:8px; right:8px;
+    font-family:"Noto Sans KR",sans-serif; font-size:.72rem; font-weight:500;
+    padding:4px 10px; border-radius:6px; cursor:pointer; line-height:1.5;
+    border:1px solid var(--line-strong); background:var(--bg); color:var(--fg-soft);
+    opacity:0; transition:opacity .15s, color .15s, border-color .15s;
+  }
+  .pre-wrap:hover .copy, .copy:focus{opacity:1}
+  .copy:hover{color:var(--accent); border-color:var(--accent)}
+  .copy.done{color:var(--accent); border-color:var(--accent); opacity:1}
+  @media (hover:none){ .copy{opacity:.65} }
+
+  /* ── 파일 경로 라벨 ────────────────────────── */
+  .pre-file{
+    font-family:var(--mono); font-size:.7rem; color:var(--fg-faint);
+    padding:6px 14px 5px; background:var(--bg-soft);
+    border:1px solid var(--line); border-bottom:none;
+    border-radius:9px 9px 0 0; line-height:1.5;
+  }
+  pre.has-file{border-top-left-radius:0; border-top-right-radius:0}
+
+  /* ── diff 블록 ────────────────────────────── */
+  /* 좌우 여백을 각 줄로 옮겨서, 강조 배경이 줄 전체를 덮게 한다. */
+  pre.diff{padding-left:0; padding-right:0}
+  pre.diff > code{display:block; min-width:100%}
+  pre.diff > code > div{
+    display:block; white-space:pre;
+    padding:0 17px 0 14px; border-left:3px solid transparent;
+  }
+  pre.diff > code > div.ctx{color:var(--fg-soft)}
+  pre.diff > code > div.del{background:var(--danger-bg); color:var(--danger); border-left-color:var(--danger)}
+  pre.diff > code > div.add{background:var(--accent-bg); color:var(--accent); border-left-color:var(--accent)}
+
+  /* ── shell tabs ───────────────────────────── */
+  .cmd{margin:0 0 18px}
+  .tabs{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:-1px; position:relative; z-index:1}
+  .tab{
+    font-family:"Noto Sans KR",sans-serif; font-size:.8rem; font-weight:500;
+    padding:6px 14px; border:1px solid var(--line); border-bottom-color:transparent;
+    border-radius:8px 8px 0 0; background:var(--bg-soft); color:var(--fg-faint);
+    cursor:pointer; line-height:1.5;
+  }
+  .tab:hover{color:var(--fg-soft)}
+  .tab.on{background:var(--bg-code); color:var(--accent); font-weight:700; border-color:var(--line)}
+  .cmd pre{border-radius:0 10px 10px 10px; margin:0}
+  .cmd pre[hidden]{display:none}
+  .cmd .pre-wrap{margin:0}
+
+  /* ── tables ───────────────────────────────── */
+  .tw{overflow-x:auto; margin:0 0 20px; border:1px solid var(--line); border-radius:10px}
+  table{border-collapse:collapse; width:100%; font-size:.92rem; min-width:320px}
+  th,td{text-align:left; padding:11px 15px; border-bottom:1px solid var(--line); vertical-align:top}
+  thead th{background:var(--bg-soft); font-size:.85rem; color:var(--fg-soft); white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+
+  /* ── callouts ─────────────────────────────── */
+  .box{
+    --bx:var(--info); --bx-bg:var(--info-bg); --bx-line:var(--info-line);
+    border:1px solid var(--bx-line); border-left:3px solid var(--bx);
+    background:var(--bx-bg); border-radius:4px 12px 12px 4px;
+    padding:17px 22px 18px; margin:0 0 22px;
+  }
+  .box .t{
+    display:flex; align-items:center; gap:8px;
+    font-weight:700; font-size:.92rem; color:var(--bx);
+    margin:0 0 9px; line-height:1.5;
+  }
+  .box p{margin:0 0 11px; font-size:.94rem}
+  .box .tw{margin:12px 0; border-color:var(--bx-line)}
+  .box th,.box td{border-bottom-color:var(--bx-line)}
+  .box thead th{background:transparent}
+  .box pre{margin:12px 0; background:var(--bg); border-color:var(--bx-line)}
+  .box > :last-child{margin-bottom:0}
+  .box.warn  {--bx:var(--warn);   --bx-bg:var(--warn-bg);   --bx-line:var(--warn-line)}
+  .box.danger{--bx:var(--danger); --bx-bg:var(--danger-bg); --bx-line:var(--danger-line)}
+  .box.ok    {--bx:var(--accent); --bx-bg:var(--accent-bg); --bx-line:var(--accent-line)}
+
+  /* ── "~가 뭔가요?" 질문 패널 ────────────────── */
+  details.q{
+    border:1px solid var(--line); border-radius:12px;
+    background:var(--bg-soft); margin:0 0 20px; overflow:hidden;
+    transition:border-color .15s, background .15s;
+  }
+  details.q:hover{border-color:var(--accent-line); background:var(--accent-bg)}
+  details.q[open]{background:var(--bg-soft); border-color:var(--accent-line)}
+  details.q > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:11px;
+    padding:14px 18px; font-weight:700; font-size:.95rem; color:var(--accent);
+  }
+  details.q > summary::-webkit-details-marker{display:none}
+  .q-ic{
+    flex:none; width:21px; height:21px; border-radius:50%;
+    background:var(--accent); color:var(--bg);
+    display:grid; place-items:center; font-size:.76rem; font-weight:700;
+    font-family:var(--mono); line-height:1;
+  }
+  .q-ch{margin-left:auto; flex:none; color:var(--fg-faint); font-size:.72rem; transition:transform .18s}
+  details.q[open] .q-ch{transform:rotate(180deg)}
+  .q-body{padding:15px 20px 18px; border-top:1px solid var(--line); background:var(--bg)}
+  .q-body > :last-child{margin-bottom:0}
+  .q-body p{font-size:.94rem}
+
+  /* ── TROUBLESHOOTING 패널 ──────────────────── */
+  details.tb{
+    border:1px solid var(--danger-line); border-left:3px solid var(--danger);
+    background:var(--danger-bg); border-radius:4px 12px 12px 4px;
+    margin:0 0 20px; overflow:hidden;
+  }
+  details.tb > summary{
+    cursor:pointer; list-style:none; position:relative;
+    padding:13px 46px 14px 20px;
+  }
+  details.tb > summary::-webkit-details-marker{display:none}
+  details.tb > summary::after{
+    content:"▾"; position:absolute; right:20px; top:50%;
+    transform:translateY(-50%); color:var(--danger); font-size:.78rem;
+    transition:transform .18s;
+  }
+  details.tb[open] > summary::after{transform:translateY(-50%) rotate(180deg)}
+  .tb-lab{
+    display:block; font-family:var(--mono); font-size:.66rem; font-weight:700;
+    letter-spacing:.17em; color:var(--danger); margin-bottom:4px;
+  }
+  .tb-tit{display:block; font-weight:700; font-size:.94rem; color:var(--fg); line-height:1.6}
+  .tb-body{padding:16px 20px 20px; border-top:1px solid var(--danger-line); background:var(--bg)}
+  .tb-body > :last-child{margin-bottom:0}
+  .tb-body h4:first-child{margin-top:0}
+
+  ul,ol{margin:0 0 16px; padding-left:1.4em}
+  li{margin:6px 0}
+  .foot{margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--fg-faint); font-size:.85rem}
+  .navlinks{display:flex; gap:12px; flex-wrap:wrap; margin:32px 0 0}
+  .navlinks a{
+    flex:1; min-width:220px; text-decoration:none; color:inherit;
+    border:1px solid var(--line); border-radius:12px; padding:14px 18px; background:var(--bg-soft);
+  }
+  .navlinks a:hover{border-color:var(--accent)}
+  .navlinks .k{display:block; font-size:.75rem; color:var(--fg-faint); letter-spacing:.06em; margin-bottom:3px}
+  .navlinks .v{display:block; font-weight:700; font-size:.95rem; color:var(--accent)}
+
+  @media print{
+    body{font-size:11pt} .wrap{width:auto;min-width:0;padding:0}
+    details.tb,details.q,.box,pre,.tw{break-inside:avoid} h2{break-after:avoid}
+    details.tb > summary::after,.q-ch{display:none}
+    nav.toc{display:none} .tabs{display:none} .cmd pre{border-radius:10px}
+    .cmd pre[hidden]{display:block !important}
+    .pre-wrap[hidden]{display:block !important}
+    .copy{display:none}
+    details:not([open]) > *{display:block !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">MyHub · 온라인 이력서 만들기</p>
+  <h1>Step 1 — 파이썬 백엔드와 Supabase 연결하기</h1>
+  <p class="lede">이 문서 하나만 따라 하면 처음부터 끝까지 재현할 수 있습니다. · 2026-07-27</p>
+</header>
+
+<div class="roadmap">
+  <div class="rm-row now"><span class="rm-badge">STEP 1</span><span>백엔드 ↔ Supabase 연결</span><span class="rm-now">← 지금 여기</span></div>
+  <div class="rm-row"><span class="rm-badge">STEP 2</span><span>테이블 만들고 데이터 읽기</span></div>
+  <div class="rm-row"><span class="rm-badge">STEP 3</span><span>화면(프론트엔드) 붙이기</span></div>
+  <div class="rm-row"><span class="rm-badge">STEP 4</span><span>내가 로그인해서 수정하기</span></div>
+  <div class="rm-row"><span class="rm-badge">STEP 5</span><span>ORM 도입 (SQLAlchemy)</span></div>
+</div>
+
+<nav class="toc">
+  <p>목차</p>
+  <ol>
+    <li><a href="#s1">이 단계의 목표</a></li>
+    <li><a href="#s2">완성된 모습</a></li>
+    <li><a href="#s3">파일 구조와 작업 위치</a></li>
+    <li><a href="#s4">처음부터 따라 하기</a></li>
+    <li><a href="#s5">코드 전체</a></li>
+    <li><a href="#s6">보안 체크리스트</a></li>
+    <li><a href="#s7">개념 정리</a></li>
+    <li><a href="#s8">다음 단계</a></li>
+  </ol>
+</nav>
+
+<div class="box" style="margin-top:26px">
+  <p class="t">🖥️ 이 문서를 읽는 법</p>
+  <p>명령어 블록마다 <strong>cmd / PowerShell / macOS·Linux</strong> 탭이 있습니다. 하나를 고르면 <strong>문서 전체가 그 터미널 기준으로 바뀝니다.</strong></p>
+  <p>코드 블록에 마우스를 올리면 오른쪽 위에 <strong>복사</strong> 버튼이 나타납니다.</p>
+  <p><span style="color:var(--accent);font-weight:700">?</span> 표시가 붙은 초록색 패널은 <strong>"이게 뭔가요?"에 대한 답</strong>입니다. 궁금할 때만 펼치면 됩니다.</p>
+  <p><span style="color:var(--danger);font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.14em">TROUBLESHOOTING</span> 이 붙은 붉은 패널은 <strong>에러가 났을 때</strong> 보는 곳입니다. 문제가 실제로 터지는 단계 바로 아래에 있습니다.</p>
+</div>
+
+<h2 id="s1">1. 이 단계의 목표</h2>
+
+<div class="box ok">
+  <p class="t">🎯 목표</p>
+  <p><strong>"파이썬 서버가 Supabase 데이터베이스와 진짜로 대화할 수 있다"를 눈으로 확인하는 것.</strong></p>
+  <p>딱 이거 하나입니다. 이력서 기능도, 화면도, 로그인도 아직 없습니다.</p>
+</div>
+
+<details class="q">
+<summary><span class="q-ic">?</span>왜 이런 시시한 것부터 하나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>집을 지을 때 수도관이 물을 실어 나르는지부터 확인하는 것과 같습니다. 화장실, 부엌, 세탁실을 다 만들어놓고 나서 "어? 물이 안 나오네?"를 발견하면, 어디가 문제인지 찾느라 훨씬 고생합니다.</p>
+<p>그래서 <strong>가장 얇은 한 줄기</strong>를 먼저 끝까지 통과시킵니다.</p>
+<pre><code>브라우저  →  파이썬 서버  →  Supabase (PostgreSQL)
+   ①            ②                ③</code></pre>
+<p>이 세 칸이 한 번 이어지면, 그 다음부터는 여기에 살을 붙이는 일만 남습니다.</p>
+</div>
+</details>
+
+<div class="tw"><table>
+<tbody>
+<tr><td>✅ <strong>만든 것</strong></td><td>파이썬 서버, DB 접속, 연결 확인용 주소 1개</td></tr>
+<tr><td>❌ <strong>아직 없는 것</strong></td><td>테이블, 이력서 데이터, 화면, 로그인, 인터넷 배포</td></tr>
+</tbody>
+</table></div>
+
+<h2 id="s2">2. 완성된 모습</h2>
+<p>서버를 켜고 브라우저에서 <code>http://127.0.0.1:8080/health</code> 에 들어가면 이게 나옵니다.</p>
+<pre><code>{
+  "database": "연결됨",
+  "postgres_version": "PostgreSQL 17.4 on aarch64-unknown-linux-gnu, ..."
+}</code></pre>
+<p>이 글자가 보이면 <strong>파이썬이 Supabase에 접속해서 실제로 질문을 던지고 답을 받아온 것</strong>입니다. (<code>select version()</code> 이라는 질문을 던졌습니다 — "너 몇 버전이니?")</p>
+
+<h2 id="s3">3. 파일 구조와 작업 위치</h2>
+<pre><code>project-root/     <span class="c">← 프로젝트 루트</span>
+├── .gitignore
+├── docs/
+└── backend/                          <span class="c">← ★ 터미널은 여기서 연다</span>
+    ├── .venv/              <span class="c">이 프로젝트 전용 파이썬 창고 (자동 생성)</span>
+    ├── main.py             <span class="c">서버 코드 (전부 여기)             ─┐</span>
+    ├── requirements.txt    <span class="c">필요한 패키지 목록                 │ 1단계에서 만듦</span>
+    ├── .env.example        <span class="c">.env 를 어떻게 채우는지 알려주는 양식 ─┘</span>
+    └── .env                <span class="c">내 접속 정보 (깃에 안 올라감, 4단계에서 직접 만듦)</span></code></pre>
+
+<h3>왜 <code>backend</code> 폴더 안에서 작업하나요</h3>
+<p>루트에서도 할 수는 있지만, <strong><code>backend</code>로 들어가서 작업하는 쪽이 확실히 낫습니다.</strong></p>
+
+<div class="tw"><table>
+<thead><tr><th></th><th>루트에서</th><th><code>backend</code> 안에서</th></tr></thead>
+<tbody>
+<tr><td>서버 실행</td><td><code>... -m uvicorn main:app --app-dir backend --port 8080</code></td><td><code>uvicorn main:app --port 8080</code></td></tr>
+<tr><td>파일 복사</td><td><code>copy backend\.env.example backend\.env</code></td><td><code>copy .env.example .env</code></td></tr>
+<tr><td><code>--app-dir</code></td><td>필요함</td><td><strong>불필요</strong></td></tr>
+</tbody>
+</table></div>
+
+<p><code>--app-dir</code>은 "<code>main.py</code>가 다른 폴더에 있다"고 알려주는 옵션인데, 애초에 그 폴더 안에 있으면 필요가 없습니다. 명령도 짧아지고 실수할 여지도 줄어듭니다.</p>
+
+<div class="box">
+  <p class="t">💡 나중에 프론트엔드가 생기면</p>
+  <p>터미널을 2개 열게 됩니다 — 하나는 <code>backend</code>에서 파이썬 서버, 하나는 <code>frontend</code>에서 화면 서버. 폴더별로 터미널을 따로 여는 게 원래 일반적인 방식이라, 지금부터 그 습관을 들이는 게 좋습니다.</p>
+</div>
+
+<details class="q">
+<summary><span class="q-ic">?</span><code>.env</code> 와 <code>.env.example</code> 을 왜 나누나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<ul>
+  <li><strong><code>.env</code></strong> — 비밀번호가 들어 있는 <strong>진짜</strong> 파일. 절대 남에게 주면 안 되고, 깃에도 안 올립니다.</li>
+  <li><strong><code>.env.example</code></strong> — "이런 항목들을 채우면 된다"는 <strong>양식</strong>. 값은 가짜입니다. 깃에 올립니다.</li>
+</ul>
+<p>이렇게 해두면 나중에 다른 사람(또는 미래의 나)이 이 프로젝트를 받았을 때, <code>.env.example</code>을 보고 뭘 채워야 하는지 알 수 있습니다.</p>
+</div>
+</details>
+
+<h2 id="s4">4. 처음부터 따라 하기</h2>
+
+<h3>0단계 — Supabase 프로젝트 만들기</h3>
+<p><a href="https://supabase.com">supabase.com</a> 가입 후 새 프로젝트를 만듭니다.</p>
+<p><strong>Security 설정은 이렇게:</strong></p>
+<div class="tw"><table>
+<thead><tr><th>항목</th><th>선택</th><th>이유</th></tr></thead>
+<tbody>
+<tr><td>Enable Data API</td><td>✅ 켜둠</td><td>나중의 선택지를 닫지 않기 위해</td></tr>
+<tr><td>Automatically expose new tables</td><td>⬜ <strong>끄기</strong></td><td>새 테이블이 자동으로 외부에 열리지 않게</td></tr>
+<tr><td>Enable automatic RLS</td><td>✅ <strong>켜기</strong></td><td>새 테이블은 기본이 "아무도 못 봄"</td></tr>
+</tbody>
+</table></div>
+
+<div class="box">
+  <p class="t">💡 왜 이게 중요한가</p>
+  <p>Supabase는 <code>anon key</code>라는 걸 줍니다. 이건 비밀번호가 아니라 <strong>공개되는 값</strong>이에요. 웹사이트 자바스크립트 안에 그대로 들어가서 누구나 볼 수 있습니다.</p>
+  <p>그래서 "anon key만 있으면 데이터를 읽을 수 있다"는 상태가 되면 <strong>인터넷 전체에 DB를 열어둔 것</strong>과 같습니다. 위의 두 설정이 그 사고를 막는 자물쇠입니다.</p>
+</div>
+
+<div class="box warn">
+  <p class="t">⚠️ Database Password</p>
+  <p>반드시 따로 저장해두세요. <strong>나중에 다시 볼 수 없고 재설정만 가능합니다.</strong></p>
+  <p>그리고 <strong>영문자와 숫자만</strong> 쓰는 걸 권합니다 (이유는 5단계 트러블슈팅에). Region은 <strong>Seoul</strong> 또는 <strong>Tokyo</strong>를 고르세요.</p>
+</div>
+
+<h3>1단계 — 프로젝트 뼈대 만들기</h3>
+
+<p>아직 <code>backend</code> 폴더 자체가 없습니다. 이 뼈대는 손으로 한 줄씩 짠 게 아니라, <strong>AI 코딩 에이전트(Claude Code)에게 아래 프롬프트를 그대로 줘서</strong> 만들었습니다.</p>
+
+<pre><code>`backend` 디렉토리에 다음 기술스택을 갖는 파이썬 백엔드 프로젝트 초기화.
+
+* python
+* fastapi
+* supabase (postgresql, session spooler) + psycopg 동기호출
+
+
+supabase 데이터베이스에 접속하여 연결된 데이터베이스의 상태와 버전을 json으로 응답하는 /health 엔드포인트를 미니멀하게 구현.
+구현체는 main.py 파일 하나로 통합.
+필요한 conn info, api secret 등은 .env 파일에 만들어서 서버가 env로부터 로드하도록 함. (.env.example로 예제를 제공해야 함)
+필요한 디펜던시는 pip requirements.txt 파일로 정리.</code></pre>
+
+<p>이 프롬프트 하나로 아래 세 파일이 만들어집니다.</p>
+<div class="tw"><table>
+<thead><tr><th>파일</th><th>역할</th></tr></thead>
+<tbody>
+<tr><td><code>backend/main.py</code></td><td>서버 코드 초안</td></tr>
+<tr><td><code>backend/requirements.txt</code></td><td>필요한 패키지 목록</td></tr>
+<tr><td><code>backend/.env.example</code></td><td><code>.env</code> 양식 (가짜 값만 들어있음)</td></tr>
+</tbody>
+</table></div>
+
+<div class="box">
+  <p class="t">💡 AI 없이 직접 만들어도 됩니다</p>
+  <p>위 세 파일을 손으로 만들고 <code>main.py</code>에 <strong>5장의 최종 코드</strong>를 그대로 옮겨 적으면 결과는 같습니다.</p>
+</div>
+
+<div class="box">
+  <p class="t">📌 AI가 만든 초안은 다를 수 있습니다</p>
+  <p>이 시점의 <code>main.py</code>는 5단계에서 주어진 것과 다를 수 있습니다. 지금 여러분 화면의 초안이 5장과 다르게 생겼어도 정상입니다.</p>
+</div>
+
+<h3>2단계 — <code>backend</code>로 이동하고 가상환경 만들기</h3>
+
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>cd backend
+python -m venv .venv</code></pre>
+  <pre data-shell="ps"><code>cd backend
+python -m venv .venv</code></pre>
+  <pre data-shell="sh"><code>cd backend
+python3 -m venv .venv</code></pre>
+</div>
+
+<details class="q">
+<summary><span class="q-ic">?</span><code>.venv</code> 가 뭔가요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p><strong>이 프로젝트만 쓰는 파이썬 패키지 창고</strong>입니다.</p>
+<p>컴퓨터 전체에 패키지를 깔면, A 프로젝트는 FastAPI 0.100이 필요한데 B 프로젝트는 0.115가 필요한 상황에서 충돌이 납니다. 그래서 프로젝트마다 창고를 따로 둡니다.</p>
+<p><code>.venv</code>는 그냥 폴더예요 — 꼬이면 지우고 이 명령부터 다시 하면 됩니다.</p>
+</div>
+</details>
+
+<h4>창고 활성화하기</h4>
+<p>"앞으로 이 창고를 쓰겠다"고 터미널에 알려주는 단계입니다. 이걸 해두면 이후 명령이 훨씬 짧아집니다.</p>
+
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>.venv\Scripts\activate</code></pre>
+  <pre data-shell="ps"><code>.\.venv\Scripts\Activate.ps1</code></pre>
+  <pre data-shell="sh"><code>source .venv/bin/activate</code></pre>
+</div>
+
+<p>성공하면 프롬프트 맨 앞에 <code>(.venv)</code> 가 붙습니다.</p>
+<pre><code>(.venv) C:\...\project-root\backend&gt;</code></pre>
+<p>터미널을 새로 열 때마다 <strong>다시 활성화해야 합니다.</strong> (창고 문을 다시 여는 것과 같습니다.)</p>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit">PowerShell에서 <code>이 시스템에서 스크립트를 실행할 수 없으므로</code> 에러가 난다면</span>
+</summary>
+<div class="tb-body">
+<h4>증상</h4>
+<pre><code>.\.venv\Scripts\Activate.ps1 : 이 시스템에서 스크립트를 실행할 수 없으므로
+파일 ...\Activate.ps1을(를) 로드할 수 없습니다.</code></pre>
+<h4>원인</h4>
+<p>Windows PowerShell은 기본적으로 <strong>스크립트 파일 실행을 막아둡니다.</strong> 보안 설정이며, 정상 동작입니다.</p>
+<h4>해결 — 이 창에서만 임시로 허용</h4>
+<pre><code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass</code></pre>
+<p>그리고 다시 활성화 명령을 실행하면 됩니다. <code>-Scope Process</code>는 <strong>지금 열려 있는 이 터미널 창에서만</strong> 적용된다는 뜻이라, 시스템 설정을 건드리지 않아 안전합니다. 창을 닫으면 원래대로 돌아옵니다.</p>
+<h4>또는 — 활성화를 아예 안 하기</h4>
+<p>활성화가 번거로우면 매번 창고 안의 파이썬을 직접 지목하는 방법도 있습니다.</p>
+<pre><code>.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m uvicorn main:app --reload --port 8080</code></pre>
+</div>
+</details>
+
+<h3>3단계 — 패키지 설치</h3>
+
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>pip install -r requirements.txt</code></pre>
+  <pre data-shell="ps"><code>pip install -r requirements.txt</code></pre>
+  <pre data-shell="sh"><code>pip install -r requirements.txt</code></pre>
+</div>
+
+<p><code>-r</code> 은 "설치할 목록이 이 파일에 적혀 있다"는 뜻입니다 (<strong>r</strong>equirements).</p>
+
+<div class="tw"><table>
+<thead><tr><th>패키지</th><th>역할</th></tr></thead>
+<tbody>
+<tr><td><code>fastapi</code></td><td>어떤 주소로 요청이 오면 뭘 응답할지 정하는 도구</td></tr>
+<tr><td><code>uvicorn</code></td><td>실제로 포트를 열고 요청을 받아주는 웹서버</td></tr>
+<tr><td><code>psycopg</code></td><td>파이썬에서 PostgreSQL에 접속하는 도구</td></tr>
+<tr><td><code>python-dotenv</code></td><td><code>.env</code> 파일을 읽어주는 도구</td></tr>
+</tbody>
+</table></div>
+
+<details class="q">
+<summary><span class="q-ic">?</span>활성화를 안 하면 어떻게 되나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p><code>pip</code>이라고만 치면 <strong>어느 창고의 pip인지 애매합니다.</strong> 컴퓨터 전체 pip이 실행돼서 엉뚱한 곳에 설치되는 게 초보자가 가장 자주 겪는 사고입니다.</p>
+<p>활성화를 했다면 프롬프트의 <code>(.venv)</code> 표시가 그걸 보증해줍니다. 활성화가 싫다면 창고를 직접 지목하세요.</p>
+<pre><code>.venv\Scripts\python.exe -m pip install -r requirements.txt</code></pre>
+</div>
+</details>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit"><code>'backend'은(는) 내부 또는 외부 명령...이 아닙니다</code></span>
+</summary>
+<div class="tb-body">
+<h4>증상</h4>
+<pre><code>&gt; backend/.venv/Scripts/python.exe -m pip install -r backend/requirements.txt
+'backend'은(는) 내부 또는 외부 명령, 실행할 수 있는 프로그램, 또는 배치 파일이 아닙니다.</code></pre>
+<h4>원인</h4>
+<p>Windows cmd는 <strong>실행 파일 경로에 <code>/</code>(슬래시)를 못 씁니다.</strong> <code>\</code>(역슬래시)만 인식합니다. macOS·Linux는 반대로 <code>/</code>만 씁니다.</p>
+<h4>해결</h4>
+<div class="tw"><table>
+<thead><tr><th>터미널</th><th>경로 구분자</th></tr></thead>
+<tbody>
+<tr><td>cmd</td><td><code>\</code> 역슬래시만</td></tr>
+<tr><td>PowerShell</td><td><code>\</code> 권장 (<code>/</code>도 대부분 동작)</td></tr>
+<tr><td>macOS / Linux</td><td><code>/</code> 슬래시만</td></tr>
+</tbody>
+</table></div>
+<h4>참고 — 왜 <code>python -m venv backend/.venv</code>는 됐나요?</h4>
+<p>거기서 <code>backend/.venv</code>는 <strong>실행할 프로그램이 아니라 그냥 인자(만들 폴더 이름)</strong>였기 때문입니다. cmd는 <strong>실행 파일 경로에만</strong> 까다롭습니다.</p>
+<p>참고로 이 가이드처럼 <code>cd backend</code> 후에 작업하면 긴 경로를 쓸 일 자체가 거의 없어서 이 문제를 만날 확률이 크게 줄어듭니다.</p>
+</div>
+</details>
+
+<h3>4단계 — 접속 정보 넣기</h3>
+
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>copy .env.example .env
+notepad .env</code></pre>
+  <pre data-shell="ps"><code>Copy-Item .env.example .env
+notepad .env</code></pre>
+  <pre data-shell="sh"><code>cp .env.example .env
+nano .env</code></pre>
+</div>
+
+<p><strong>Supabase 대시보드 → Connect → Direct → Session pooler</strong> 에서 연결 문자열을 확인하고, 항목별로 옮겨 적습니다.</p>
+<pre><code>postgresql://postgres.abcdefghijk:[YOUR-PASSWORD]@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
+             └──── DB_USER ────┘  └ DB_PASSWORD ┘ └──────────── DB_HOST ─────────────────┘ └PORT┘ └NAME┘</code></pre>
+<p>최종 <code>.env</code>:</p>
+<pre data-file="backend/.env"><code>DB_HOST=aws-0-ap-northeast-1.pooler.supabase.com
+DB_PORT=5432
+DB_NAME=postgres
+DB_USER=postgres.실제프로젝트ID
+DB_PASSWORD=실제비밀번호</code></pre>
+<p>체크할 것: <strong>따옴표 없이</strong>, <strong>공백 없이</strong>, <strong><code>[</code> <code>]</code> 대괄호가 남아 있지 않게.</strong></p>
+
+<details class="q">
+<summary><span class="q-ic">?</span>왜 Session pooler인가요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>Connect 화면에는 세 가지 선택지가 있습니다.</p>
+<div class="tw"><table>
+<tbody>
+<tr><td>Direct connection</td><td>IPv6로만 접속됨. 인터넷 환경에 따라 <strong>될 수도 안 될 수도</strong> 있음 → 피하기</td></tr>
+<tr><td>Transaction pooler</td><td>특수 설정이 필요함 → 지금은 말고</td></tr>
+<tr><td><strong>Session pooler</strong></td><td><strong>어디서든 됨</strong> → 이거</td></tr>
+</tbody>
+</table></div>
+<p>Direct는 나중에 서버에 올렸을 때 갑자기 안 되는 일이 흔해서, 처음부터 Session pooler로 가는 게 안전합니다.</p>
+</div>
+</details>
+
+<h3>5단계 — 서버 실행</h3>
+
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>uvicorn main:app --reload --port 8080</code></pre>
+  <pre data-shell="ps"><code>uvicorn main:app --reload --port 8080</code></pre>
+  <pre data-shell="sh"><code>uvicorn main:app --reload --port 8080</code></pre>
+</div>
+
+<h4>명령어 해부</h4>
+<pre><code>uvicorn   main:app   --reload   --port 8080
+└─ ① ─┘  └── ② ──┘  └── ③ ──┘  └─── ④ ───┘</code></pre>
+<div class="tw"><table>
+<tbody>
+<tr><td>① <code>uvicorn</code></td><td>포트를 열고 요청을 받아주는 <strong>웹서버를 실행</strong></td></tr>
+<tr><td>② <code>main:app</code></td><td><code>main.py</code> 파일 안의 <code>app</code> 이라는 변수를 서버로 띄워라</td></tr>
+<tr><td>③ <code>--reload</code></td><td><strong>코드를 고치면 서버가 알아서 재시작.</strong> 개발할 때만 씀</td></tr>
+<tr><td>④ <code>--port 8080</code></td><td>8080번 문으로 열어라</td></tr>
+</tbody>
+</table></div>
+
+<details class="q">
+<summary><span class="q-ic">?</span>uvicorn과 FastAPI는 뭐가 다른가요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<div class="tw"><table>
+<tbody>
+<tr><td><strong>uvicorn</strong></td><td>8080번 포트에서 <strong>기다리다가</strong>, 브라우저 요청을 받아 FastAPI에 넘김</td></tr>
+<tr><td><strong>FastAPI</strong></td><td>그 요청을 보고 <strong>뭘 응답할지 결정</strong>함</td></tr>
+</tbody>
+</table></div>
+<p>FastAPI 혼자서는 포트를 열지 못합니다. 식당으로 치면 <strong>uvicorn이 홀 서빙, FastAPI가 주방</strong>입니다.</p>
+</div>
+</details>
+
+<details class="q">
+<summary><span class="q-ic">?</span><code>main:app</code> 은 어디를 가리키나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p><code>backend/main.py</code> 안의 이 줄입니다.</p>
+<pre data-file="backend/main.py"><code>app = FastAPI(title="MyHub")</code></pre>
+<ul>
+  <li><code>main</code> → 파일 이름 <code>main.py</code> (<code>.py</code>는 뺌)</li>
+  <li><code>:</code> → "이 파일 안의"</li>
+  <li><code>app</code> → 변수 이름</li>
+</ul>
+<p>변수 이름을 <code>myserver</code>로 바꿨다면 명령어도 <code>main:myserver</code>가 돼야 합니다.</p>
+</div>
+</details>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit"><code>[WinError 10013] 액세스 권한에 의해 숨겨진 소켓에...</code></span>
+</summary>
+<div class="tb-body">
+<h4>증상</h4>
+<pre><code>ERROR:  [WinError 10013] 액세스 권한에 의해 숨겨진 소켓에 액세스를 시도했습니다</code></pre>
+<h4>원인</h4>
+<p><strong>그 포트를 열 수 없었습니다.</strong> 코드 문제가 아닙니다.</p>
+<p>Windows에서는 Hyper-V, WSL2, Docker 같은 게 포트 대역을 통째로 예약해버리는 일이 흔합니다. 그 대역에 걸리면 <strong>아무도 안 쓰고 있어도</strong> "권한 없음"으로 거부됩니다. 이 가이드가 8000이 아니라 <strong>8080</strong>을 쓰는 이유가 이것입니다.</p>
+<h4>해결 — 다른 포트로</h4>
+<pre><code>uvicorn main:app --reload --port 9000</code></pre>
+<p>주소도 함께 바뀝니다 → <code>http://127.0.0.1:9000/health</code></p>
+<h4>원인을 직접 확인하고 싶다면</h4>
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>netsh interface ipv4 show excludedportrange protocol=tcp
+netstat -ano | findstr :8080</code></pre>
+  <pre data-shell="ps"><code>netsh interface ipv4 show excludedportrange protocol=tcp
+Get-NetTCPConnection -LocalPort 8080 -ErrorAction SilentlyContinue</code></pre>
+  <pre data-shell="sh"><code>lsof -i :8080</code></pre>
+</div>
+<p>예약 목록에 그 포트가 포함돼 있으면 원인이 이것입니다. (macOS·Linux에는 이런 예약 개념이 없어서 이 에러 자체가 거의 안 납니다. 대신 1024 미만 포트는 관리자 권한이 필요합니다.)</p>
+</div>
+</details>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit"><code>KeyError: 'DB_HOST'</code></span>
+</summary>
+<div class="tb-body">
+<h4>증상</h4>
+<pre><code>File ".../backend/main.py", line 15, in &lt;module&gt;
+    "host": os.environ["DB_HOST"],
+KeyError: 'DB_HOST'</code></pre>
+<h4>원인</h4>
+<p><code>.env</code> 파일이 없거나, 있어도 <strong>파이썬이 그 위치를 못 찾았습니다.</strong></p>
+<p><code>load_dotenv()</code>를 아무 인자 없이 쓰면 "현재 폴더 근처"에서 <code>.env</code>를 찾습니다. 실행하는 폴더가 바뀌면 못 찾을 수 있어서, 이 프로젝트는 경로를 코드에 못박아 뒀습니다.</p>
+<pre data-file="backend/main.py"><code>from pathlib import Path
+load_dotenv(Path(__file__).parent / ".env")</code></pre>
+<p><code>__file__</code>은 "지금 이 파이썬 파일"입니다. 그 옆의 <code>.env</code>를 읽으라고 지정한 것이라, <strong>어느 폴더에서 실행하든</strong> 확실합니다.</p>
+<h4>해결 — <code>.env</code> 파일이 실제로 있는지 확인</h4>
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>dir /a .env
+type .env</code></pre>
+  <pre data-shell="ps"><code>Get-ChildItem -Force .env
+Get-Content .env</code></pre>
+  <pre data-shell="sh"><code>ls -la .env
+cat .env</code></pre>
+</div>
+<p>파일이 없다면 4단계로 돌아가 만드세요. 파일은 있는데 그 이름의 항목이 없다면 오타를 확인하세요.</p>
+<div class="box ok"><p class="t">✅ 사실 좋은 신호입니다</p><p>포트 문제가 해결되어 파이썬이 <code>main.py</code>를 읽기 시작했다는 뜻이니까요.</p></div>
+</div>
+</details>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit"><code>failed to resolve host '...@aws-0-...pooler.supabase.com'</code></span>
+</summary>
+<div class="tb-body">
+<h4>증상</h4>
+<pre><code>psycopg.OperationalError: failed to resolve host
+  'xxxxxxxx@aws-0-ap-northeast-1.pooler.supabase.com': [Errno 11003] getaddrinfo failed</code></pre>
+<h4>원인 — 이번 단계에서 가장 헷갈리는 에러입니다</h4>
+<p>접속 정보를 <strong>URL 한 줄</strong>로 받으면 이 문제가 생깁니다.</p>
+<pre><code>postgresql://아이디:비밀번호@호스트:포트/DB이름
+                        ↑
+                   여기부터 호스트</code></pre>
+<p>이 형식에서 <strong><code>@</code>는 "여기부터 호스트"라는 구분자</strong>입니다. 그런데 <strong>비밀번호 안에 <code>@</code>가 들어 있으면</strong>, 파서가 그걸 구분자로 착각합니다.</p>
+<pre><code>postgresql://postgres.abc:AAA@xxxxxxxx@aws-0-...supabase.com:5432/postgres
+                             ↑ 여기서 잘라버림</code></pre>
+<p>그 결과 호스트가 <code>xxxxxxxx@aws-0-...supabase.com</code>이 되어버렸고, 그런 주소는 세상에 없으니 <code>getaddrinfo failed</code>가 났습니다. <code>@</code> 말고도 <code># ? / % :</code> 가 있으면 같은 문제가 생깁니다.</p>
+<h4>해결 — URL을 쓰지 않고 항목별로 전달</h4>
+<p>이 프로젝트는 처음부터 이 방식을 씁니다.</p>
+<pre data-file="backend/main.py"><code><span class="c"># 깨지기 쉬운 방식</span>
+DATABASE_URL = os.environ["DATABASE_URL"]
+psycopg.connect(DATABASE_URL)
+
+<span class="c"># 이 프로젝트가 쓰는 방식 — 특수문자가 있어도 안전</span>
+CONN_INFO = {
+    "host":     os.environ["DB_HOST"],
+    "port":     os.environ["DB_PORT"],
+    "dbname":   os.environ["DB_NAME"],
+    "user":     os.environ["DB_USER"],
+    "password": os.environ["DB_PASSWORD"],
+}
+psycopg.connect(**CONN_INFO)</code></pre>
+<p>URL을 거치지 않으므로 <strong>파싱 자체가 일어나지 않습니다.</strong> 비밀번호에 뭐가 들어 있든 그대로 전달됩니다.</p>
+<div class="box danger">
+  <p class="t">🚨 이 에러가 났다면 비밀번호를 바꾸세요</p>
+  <p>에러 메시지에 <strong>비밀번호가 그대로 찍힙니다.</strong> 터미널 기록, 로그, 스크린샷에 남습니다.</p>
+  <p>Supabase → Settings → Database → <strong>Reset database password</strong><br>
+  새 비밀번호는 <strong>영문자와 숫자만</strong> 쓰는 걸 권합니다.</p>
+</div>
+</div>
+</details>
+
+<h3>6단계 — 확인</h3>
+<p>이 줄이 뜨면 성공입니다.</p>
+<pre><code>INFO:     Uvicorn running on http://127.0.0.1:8080 (Press CTRL+C to quit)
+INFO:     Application startup complete.</code></pre>
+<p>브라우저에서 <strong><code>http://127.0.0.1:8080/health</code></strong> 를 엽니다. 서버를 끄려면 터미널에서 <strong>Ctrl+C</strong>.</p>
+
+<div class="box warn">
+  <p class="t">📌 <code>.env</code>를 고쳤는데 반영이 안 된다면</p>
+  <p><code>--reload</code>는 <strong><code>.py</code> 파일만</strong> 감시합니다. <code>.env</code>를 고쳤다면 <strong>Ctrl+C로 끄고 다시 실행</strong>해야 합니다.</p>
+</div>
+
+<h2 id="s5">5. 코드 전체 (<code>backend/main.py</code>)</h2>
+<pre data-file="backend/main.py"><code>import os
+from pathlib import Path
+
+import psycopg
+from dotenv import load_dotenv
+from fastapi import FastAPI
+
+<span class="c"># 어느 폴더에서 실행하든 backend/.env 를 찾도록 경로를 직접 지정한다.</span>
+load_dotenv(Path(__file__).parent / ".env")
+
+<span class="c"># 접속 정보를 항목별로 받는다.</span>
+<span class="c"># 하나의 URL 문자열로 받으면 비밀번호에 @ # ? / 같은 문자가 있을 때</span>
+<span class="c"># 주소 구분자로 잘못 해석되어 접속이 실패한다.</span>
+CONN_INFO = {
+    "host": os.environ["DB_HOST"],
+    "port": os.environ["DB_PORT"],
+    "dbname": os.environ["DB_NAME"],
+    "user": os.environ["DB_USER"],
+    "password": os.environ["DB_PASSWORD"],
+}
+
+app = FastAPI(title="MyHub")
+
+
+@app.get("/")
+def root():
+    return {"message": "서버가 살아있습니다"}
+
+
+@app.get("/health")
+def health():
+    <span class="c"># 요청마다 새로 연결한다. 지금은 이게 제일 단순해서 이렇게 두고,</span>
+    <span class="c"># 테이블이 생기는 시점에 커넥션 풀로 바꾼다.</span>
+    with psycopg.connect(**CONN_INFO) as conn:
+        with conn.cursor() as cur:
+            cur.execute("select version()")
+            version = cur.fetchone()[0]
+
+    return {"database": "연결됨", "postgres_version": version}</code></pre>
+
+<details class="q">
+<summary><span class="q-ic">?</span><code>@app.get("/health")</code> 가 무슨 뜻인가요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>"브라우저가 <code>/health</code> 주소로 들어오면, <strong>바로 아래 함수를 실행해라</strong>"는 표시입니다.</p>
+<p><code>@app.get("/")</code> 이면 주소 없이 그냥 들어왔을 때고요. 이렇게 주소 하나하나를 <strong>엔드포인트</strong>라고 부릅니다.</p>
+</div>
+</details>
+
+<div class="box warn">
+  <p class="t">📌 알면서 남겨둔 부분</p>
+  <p><code>/health</code>는 요청이 올 때마다 DB에 <strong>새로 접속</strong>합니다. 원래는 접속을 미리 몇 개 만들어놓고 재사용(커넥션 풀)해야 하지만, 지금은 코드가 단순한 게 더 중요해서 이렇게 뒀습니다. 테이블이 생기는 Step 2에서 고칩니다.</p>
+</div>
+
+<h2 id="s6">6. 보안 체크리스트</h2>
+<div class="tw"><table>
+<tbody>
+<tr><td>✅</td><td><code>.env</code>는 <strong>절대 깃에 올리지 않는다</strong> — <code>.gitignore</code>에 등록되어 있음</td></tr>
+<tr><td>✅</td><td><code>.env.example</code>에는 <strong>가짜 값만</strong> 넣는다 — 이 파일은 깃에 올라감</td></tr>
+<tr><td>✅</td><td>비밀번호를 채팅·이슈·스크린샷에 붙여넣지 않는다</td></tr>
+<tr><td>✅</td><td>에러 메시지를 공유할 때는 <strong>접속 정보가 들어간 줄을 지우고</strong> 붙인다</td></tr>
+<tr><td>✅</td><td>노출된 것 같으면 <strong>즉시 재설정</strong>한다 (몇 초면 됨)</td></tr>
+</tbody>
+</table></div>
+<p><code>.gitignore</code> 내용:</p>
+<pre data-file=".gitignore"><code>.env
+.venv/
+venv/
+__pycache__/
+*.pyc</code></pre>
+
+<h2 id="s7">7. 지금까지 배운 개념 정리</h2>
+<div class="tw"><table>
+<thead><tr><th>용어</th><th>한 줄 설명</th></tr></thead>
+<tbody>
+<tr><td><strong>가상환경 (venv)</strong></td><td>이 프로젝트만 쓰는 파이썬 패키지 창고. 프로젝트끼리 버전 충돌을 막음</td></tr>
+<tr><td><strong>활성화 (activate)</strong></td><td>"앞으로 이 창고를 쓰겠다"고 터미널에 알리는 것. 프롬프트에 <code>(.venv)</code>가 붙음</td></tr>
+<tr><td><strong>FastAPI</strong></td><td>어떤 주소로 요청이 오면 뭘 응답할지 정하는 도구 (주방)</td></tr>
+<tr><td><strong>uvicorn</strong></td><td>실제로 포트를 열고 요청을 받아주는 웹서버 (홀 서빙)</td></tr>
+<tr><td><strong>psycopg</strong></td><td>파이썬에서 PostgreSQL에 접속하는 도구</td></tr>
+<tr><td><strong><code>.env</code></strong></td><td>비밀번호처럼 코드에 적으면 안 되는 값을 따로 보관하는 파일</td></tr>
+<tr><td><strong>엔드포인트</strong></td><td>서버가 응답하는 주소 하나. 지금은 <code>/</code> 와 <code>/health</code> 두 개</td></tr>
+<tr><td><strong>포트</strong></td><td>한 컴퓨터 안의 문 번호. 8080번 문으로 서버를 열었음</td></tr>
+<tr><td><strong>Session pooler</strong></td><td>Supabase가 제공하는 안정적인 DB 접속 창구</td></tr>
+<tr><td><strong>anon key</strong></td><td>Supabase의 공개 열쇠. <strong>비밀번호가 아님.</strong> 이것만으로 데이터가 열리면 안 됨</td></tr>
+<tr><td><strong>RLS</strong></td><td>행 단위 접근 제어. 켜두면 새 테이블은 기본이 "아무도 못 봄"</td></tr>
+</tbody>
+</table></div>
+
+<h2 id="s8">8. 다음 단계 (Step 2)</h2>
+<div class="box ok">
+  <p class="t">🎯 다음 목표</p>
+  <p><strong>테이블을 하나 만들고, 그 안의 데이터를 API로 읽어옵니다.</strong></p>
+</div>
+<p>지금은 <code>/health</code>가 "PostgreSQL 17.4"라는 <strong>DB 자기소개</strong>만 가져옵니다. 다음엔 <code>/profile</code>이 <strong>내 이름과 한 줄 소개</strong>를 가져오게 만듭니다.</p>
+<pre><code>[지금]  브라우저 → 서버 → DB → "나 PostgreSQL 17.4야"
+[다음]  브라우저 → 서버 → DB → "백영민 / 백엔드 개발자"</code></pre>
+<ol>
+  <li>Supabase SQL Editor에서 <code>profile</code> 테이블 만들기</li>
+  <li>내 정보 한 줄 넣기</li>
+  <li><code>GET /profile</code> 엔드포인트 추가</li>
+  <li>브라우저에서 내 이름이 나오는 것 확인</li>
+</ol>
+<p>여기까지 되면 <strong>"데이터베이스에 있는 내 데이터가 웹 주소로 나온다"</strong>가 완성됩니다. 그 다음 Step 3에서 화면을 붙이면 비로소 웹사이트가 됩니다.</p>
+
+<div class="navlinks">
+  <a href="step2_first_table_api.html"><span class="k">다음 →</span><span class="v">Step 2 — 첫 테이블 만들고 API로 읽어오기</span></a>
+</div>
+
+<p class="foot">MyHub 개발 기록 · Step 1 · 2026-07-27</p>
+
+</div>
+
+<script>
+(function(){
+  /* ── 0. diff 블록을 줄 단위로 다시 그린다 ──
+     pre 안에서는 줄바꿈 문자가 그대로 렌더링되므로, 각 줄을 미리 태그로
+     감싸두면 태그 사이의 줄바꿈이 빈 줄로 잡혀 간격이 벌어진다.
+     그래서 평범한 텍스트로 두고 여기서 div 로 변환한다. */
+  document.querySelectorAll('pre.diff > code').forEach(function(code){
+    var lines = code.textContent.replace(/\n+$/, '').split('\n');
+    code.textContent = '';
+    lines.forEach(function(line){
+      var head = line.charAt(0);
+      var div = document.createElement('div');
+      div.className = head === '+' ? 'add' : (head === '-' ? 'del' : 'ctx');
+      div.textContent = line.length ? line : ' ';
+      code.appendChild(div);
+    });
+  });
+
+  /* ── 0.5 코드 블록 위에 파일 경로를 표시한다 ── */
+  document.querySelectorAll('pre[data-file]').forEach(function(pre){
+    var lab = document.createElement('div');
+    lab.className = 'pre-file';
+    lab.textContent = pre.dataset.file;
+    pre.parentNode.insertBefore(lab, pre);
+    pre.classList.add('has-file');
+  });
+
+  /* ── 1. 코드 블록마다 복사 버튼 (diff 블록은 제외) ── */
+  function fallbackCopy(text, done){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  document.querySelectorAll('pre:not(.diff)').forEach(function(pre){
+    var wrap = document.createElement('div');
+    wrap.className = 'pre-wrap';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy';
+    btn.textContent = '복사';
+    btn.addEventListener('click', function(){
+      var code = pre.querySelector('code');
+      var text = code ? code.innerText : pre.innerText;
+      var done = function(){
+        btn.textContent = '복사됨';
+        btn.classList.add('done');
+        setTimeout(function(){
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text, done); });
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+    wrap.appendChild(btn);
+  });
+
+  /* ── 2. 터미널 탭 (문서 전체가 함께 전환된다) ── */
+  var DEFAULT = navigator.platform && /Mac|iPhone|iPad|Linux/.test(navigator.platform) ? 'sh' : 'cmd';
+
+  function apply(s){
+    document.querySelectorAll('.cmd').forEach(function(group){
+      var panes = group.querySelectorAll('pre[data-shell]');
+      if (!panes.length) return;
+      var has = false;
+      panes.forEach(function(p){ if(p.dataset.shell === s) has = true; });
+      var target = has ? s : panes[0].dataset.shell;
+      panes.forEach(function(p){
+        var box = p.closest('.pre-wrap') || p;
+        box.hidden = (p.dataset.shell !== target);
+      });
+      group.querySelectorAll('.tab').forEach(function(t){
+        t.classList.toggle('on', t.dataset.shell === target);
+      });
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('.tab');
+    if(t) apply(t.dataset.shell);
+  });
+
+  apply(DEFAULT);
+})();
+</script>
+</body>
+</html>

