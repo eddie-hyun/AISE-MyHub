@@ -32,7 +32,7 @@
 
 | | |
 |---|---|
-| ✅ **만드는 것** | `profile` 테이블, `GET /profile` 주소, 커넥션 풀 |
+| ✅ **만드는 것** | `GET /profile` 주소, `profile` 테이블 |
 | ❌ **아직 없는 것** | 화면(HTML), 수정 기능, 로그인, 나머지 이력서 항목들 |
 
 ---
@@ -57,7 +57,50 @@
 
 ---
 
-## 3. ① 테이블 만들기
+## 3. ① `/profile` 주소 만들기
+
+이 엔드포인트는 손으로 짠 게 아니라, **AI 코딩 에이전트(Claude Code)에게 아래 프롬프트를 그대로 줘서** 만들었습니다.
+
+```
+DB에 저장된 사용자 정보를 돌려주는 엔드포인트를 추가:
+
+GET /profile
+
+응답에는 이름, 한 줄 소개, 상세 소개, 마지막 업데이트 시각이 포함되어야 함.
+
+sql query를 직접 쓰는 간단한 방식으로 구현.
+```
+
+> 📌 **AI가 만든 초안을 그대로 쓰지는 않았습니다.** 4장의 SQL과 같은 이유입니다 — 어떤 컬럼을 어떤 방식으로 읽어올지는 프롬프트가 정해준 게 아니라 **AI가 그때그때 고른 것**이라, 같은 프롬프트를 다시 줘도 다른 모양이 나올 수 있습니다.
+
+> ⚠️ **아직 이 코드를 실행해도 에러가 납니다.** `select`가 읽으려는 `public.profile` 테이블이 아직 없기 때문입니다. 이 코드가 **어떤 컬럼을 기대하는지**(`full_name`, `headline`, `summary`, `updated_at`)는 이미 정해졌으니, 다음 절에서는 그 모양에 맞춰 테이블을 만듭니다.
+
+<details>
+<summary><b>▸ 트러블슈팅 — <code>404 프로필이 아직 없습니다</code></b></summary>
+
+**원인**
+테이블은 만들어졌는데 **데이터가 한 줄도 없습니다.** `insert` 문을 빼먹었거나 실행이 안 된 경우입니다.
+
+**해결 — SQL Editor에서 확인**
+
+```sql
+select * from public.profile;
+```
+
+`no rows`가 나오면 다시 넣으세요.
+
+```sql
+insert into public.profile (full_name, headline, summary)
+values ('내이름', '내 한 줄 소개', '조금 더 긴 소개글');
+```
+
+> ✅ 이건 **코드가 잘 동작한다는 증거**입니다. 404가 나왔다는 건 서버가 DB까지 잘 다녀왔다는 뜻이에요. 진짜로 데이터가 없었을 뿐입니다.
+
+</details>
+
+---
+
+## 4. ② 테이블 만들기
 
 ### SQL Editor 열기
 
@@ -77,6 +120,10 @@ Supabase 대시보드 **왼쪽 사이드바**에서 찾습니다.
 
 ### 실행할 SQL
 
+> ⚠️ **이 SQL은 고정된 정답이 아니라 예시입니다.**
+> 위에서 만든 엔드포인트가 요구하는 건 "이름 · 한 줄 소개 · 상세 소개 · 마지막 업데이트 시각을 담을 테이블"이라는 **내용**뿐입니다. `full_name` / `headline` / `summary` / `updated_at`이라는 **컬럼 이름과 타입은 AI가 고른 것**이라, 다른 AI에게 같은 요구를 하거나 같은 AI에게 다시 물어봐도 `name` / `tagline` / `bio` / `modified_at`처럼 다르게 나올 수 있습니다.
+> 지금 아래 SQL은 **바로 위 코드가 실제로 사용 중인 모양**이고, `backend/main.py`의 쿼리와 1:1로 맞춰져 있습니다.
+
 ```sql
 create table public.profile (
   id         bigint generated always as identity primary key,
@@ -95,6 +142,16 @@ values (
 ```
 
 붙여넣고 **`Run`** 버튼 또는 **Ctrl + Enter**.
+
+> 💡 **코드가 먼저, SQL은 그 다음입니다.**
+> 앞 절에서 만든 엔드포인트가 이미 어떤 컬럼을 기대하는지 정해놨습니다. 그 모양을 SQL로 손수 옮겨 적는 대신, **AI에게 코드를 보여주고 맞춰달라고 하는 편이 더 안전합니다.**
+>
+> ```
+> backend/main.py 의 현재 구현(쿼리, DTO)을 보고,
+> 거기서 요구하는 컬럼 구성에 맞는 public.profile 테이블 생성 SQL을 만들어줘.
+> ```
+>
+> **코드가 진실(source of truth)이고, SQL은 그걸 따라가는 쪽**이어야 나중에 "테이블은 이렇게 만들었는데 코드는 다른 컬럼을 찾는다"는 불일치가 생기지 않습니다.
 
 > 💡 **`Success. No rows returned` 이 정상입니다.**
 > 테이블을 만들고 데이터를 넣는 명령은 **결과 표를 돌려주지 않습니다.** 에러가 아닙니다.
@@ -120,9 +177,13 @@ values (
 | `timestamptz` | 시간대 정보까지 포함한 시각 |
 | `default now()` | "값을 안 주면 지금 시각을 넣어라" → `insert`에 안 적었는데도 채워지는 이유 |
 
+> 🎁 **보너스 — 자동 생성된 API 문서**
+> 이제 코드와 테이블이 모두 준비됐으니 **http://127.0.0.1:8080/docs** 를 열어보세요.
+> 만든 주소 3개(`/`, `/health`, `/profile`)가 목록으로 나오고 **`Try it out` 버튼으로 브라우저에서 바로 실행**해볼 수 있습니다. 따로 만든 게 아니라 FastAPI가 코드를 읽고 자동 생성한 것입니다.
+
 ---
 
-## 4. ② 바깥에서 못 보게 잠그기
+## 5. ③ 바깥에서 못 보게 잠그기
 
 테이블을 만든 직후에 **두 줄을 항상 같이 실행**하세요.
 
@@ -222,337 +283,16 @@ Supabase의 경고는 보통 **"밖에 열려 있는데 잠금이 없다"**일 �
 
 ---
 
-## 5. ③ `/profile` 주소 만들기
-
-`backend/main.py`에 추가한 부분입니다.
-
-```python
-@app.get("/profile")
-def get_profile():
-    with pool.connection() as conn:
-        # dict_row: 결과를 튜플이 아니라 {컬럼명: 값} 형태로 받는다.
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                select id, full_name, headline, summary, updated_at
-                from public.profile
-                order by id
-                limit 1
-                """
-            )
-            row = cur.fetchone()
-
-    if row is None:
-        raise HTTPException(status_code=404, detail="프로필이 아직 없습니다.")
-
-    # 최상위는 항상 이름 있는 오브젝트로 감싼다.
-    return {"profile": row}
-```
-
-<details>
-<summary><b>▸ <code>row_factory=dict_row</code> 는 왜 붙이나요?</b></summary>
-
-이게 없으면 DB 결과가 **튜플**로 옵니다.
-
-```python
-(1, '백영민', '백엔드 개발자', '...', datetime(...))
-# row[1]이 이름... 순서를 외워야 함
-```
-
-붙이면 **딕셔너리**로 옵니다.
-
-```python
-{'id': 1, 'full_name': '백영민', 'headline': '백엔드 개발자', ...}
-# row['full_name'] — 순서를 몰라도 됨
-```
-
-게다가 딕셔너리는 FastAPI가 그대로 JSON으로 바꿔주기 때문에 **변환 코드를 한 줄도 안 써도 됩니다.**
-
-</details>
-
-<details>
-<summary><b>▸ <code>order by id limit 1</code> 은 왜 필요한가요?</b></summary>
-
-프로필은 한 줄만 있으면 되니 **첫 줄 하나만** 가져옵니다.
-
-`order by`를 빼면 **어떤 줄이 나올지 보장되지 않습니다.** 데이터베이스는 "순서를 지정하지 않으면 아무 순서로나 줘도 된다"는 규칙이라, 지금은 한 줄뿐이라 문제없어 보여도 나중에 줄이 늘면 예측 불가능해집니다.
-
-</details>
-
-<details>
-<summary><b>▸ 왜 <code>404</code> 를 따로 내보내나요?</b></summary>
-
-테이블이 비어 있으면 `row`가 `None`이 됩니다. 그냥 두면 `{"profile": null}` 같은 애매한 응답이 나갑니다.
-
-그러면 나중에 화면 쪽에서 **"데이터가 없는 건지, 서버가 이상한 건지" 구분이 안 됩니다.** 404는 "그런 건 없다"는 명확한 신호입니다.
-
-</details>
-
-<details>
-<summary><b>▸ 왜 <code>{"profile": row}</code> 로 한 겹 감싸나요?</b></summary>
-
-나중에 이력서 전체를 내려줄 때 이런 모양이 됩니다.
-
-```json
-{ "profile": {...}, "experiences": [...], "projects": [...] }
-```
-
-지금부터 감싸두면 **그때 응답 형태를 안 바꿔도 됩니다.** 안 감쌌으면 화면 코드를 전부 고쳐야 하고요.
-
-최상위에 배열이나 값을 그대로 두지 않고 **항상 이름 있는 오브젝트로 감싸는 것**이 이 프로젝트의 규칙입니다.
-
-</details>
-
-> 🎁 **보너스 — 자동 생성된 API 문서**
-> **http://127.0.0.1:8080/docs** 를 열어보세요.
-> 만든 주소 3개(`/`, `/health`, `/profile`)가 목록으로 나오고 **`Try it out` 버튼으로 브라우저에서 바로 실행**해볼 수 있습니다. 따로 만든 게 아니라 FastAPI가 코드를 읽고 자동 생성한 것입니다.
-
----
-
-## 6. ④ 커넥션 풀 — 연결을 재사용하기
-
-### 왜 필요한가
-
-풀이 없으면 요청이 올 때마다 **매번 처음부터** 이 과정을 다 합니다.
-
-```
-TCP 연결 → TLS 암호화 협상 → 로그인 인증 → 쿼리 실행 → 연결 종료
-└────────── 여기까지 0.2~0.4초 ──────────┘   └ 0.01초 ┘
-```
-
-정작 하려던 쿼리는 눈 깜짝할 새인데 **연결하고 끊는 데 대부분의 시간**을 씁니다. 서버가 도쿄에 있으니 왕복 시간도 붙고요.
-
-**커넥션 풀**은 연결 몇 개를 미리 열어두고 **빌려주고 반납받는** 방식입니다.
-
-> 💡 **지금은 체감이 안 될 수도 있습니다.**
-> 혼자서 가끔 새로고침하는 정도면 차이를 느끼기 어렵습니다. 진짜 효과는 **한 화면이 여러 요청을 동시에 던질 때**(Step 3부터 그렇게 됩니다)와 **방문자가 여럿일 때** 납니다. 미리 깔아두는 기반이라고 보시면 됩니다.
-
-### 패키지 추가
-
-`requirements.txt`의 `psycopg` 줄을 이렇게 바꿉니다.
-
-```
-psycopg[binary,pool]
-```
-
-서버를 **끄고**(Ctrl+C) 다시 설치합니다.
-
-```
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8080
-```
-
-> ⚠️ **프롬프트에 `(.venv)` 가 있는지 먼저 확인하세요.**
-> 없으면 **컴퓨터 전체 파이썬에 설치되어** 다음 단계에서 에러가 납니다. 아래 트러블슈팅 참고.
-
-### 바뀐 코드 3곳
-
-먼저 전체 변경사항을 한눈에 봅시다. `-` 줄이 지운 것, `+` 줄이 추가한 것입니다.
-
-```diff
- import os
-+from contextlib import asynccontextmanager
- from pathlib import Path
-
--import psycopg
- from dotenv import load_dotenv
- from fastapi import FastAPI, HTTPException
- from psycopg.rows import dict_row
-+from psycopg_pool import ConnectionPool
-
- CONN_INFO = { ... }
-
-+pool = ConnectionPool(kwargs=CONN_INFO, min_size=1, max_size=5, open=False)
-+
-+
-+@asynccontextmanager
-+async def lifespan(app: FastAPI):
-+    pool.open(wait=True, timeout=10)
-+    yield
-+    pool.close()
-+
-+
--app = FastAPI(title="MyHub")
-+app = FastAPI(title="MyHub", lifespan=lifespan)
-
-
- @app.get("/health")
- def health():
--    with psycopg.connect(**CONN_INFO) as conn:
-+    with pool.connection() as conn:
-         ...
-
-
- @app.get("/profile")
- def get_profile():
--    with psycopg.connect(**CONN_INFO) as conn:
-+    with pool.connection() as conn:
-         ...
-```
-
-#### ① 풀 만들기
-
-```python
-pool = ConnectionPool(kwargs=CONN_INFO, min_size=1, max_size=5, open=False)
-```
-
-| | |
-|---|---|
-| `kwargs=CONN_INFO` | 접속 정보는 그대로 재사용 |
-| `min_size=1` | 최소 1개는 항상 열어둔다 |
-| `max_size=5` | 바빠도 5개까지만. 무한정 늘어나서 DB를 괴롭히지 않도록 |
-| `open=False` | **여기서는 아직 열지 않는다** (다음 항목에서 엽니다) |
-
-#### ② `lifespan` — 서버의 시작과 끝
-
-```python
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    pool.open(wait=True, timeout=10)   # 서버 켜질 때
-    yield                              # ← 이 지점에서 서버가 돌아감
-    pool.close()                       # 서버 꺼질 때
-
-app = FastAPI(title="MyHub", lifespan=lifespan)
-```
-
-`yield` **위쪽은 시작할 때 한 번**, **아래쪽은 끝날 때 한 번** 실행됩니다. 그 사이가 서버가 살아 있는 시간입니다.
-
-풀을 파일 맨 위에서 바로 열면 서버가 준비되기도 전에 DB에 붙으려 해서 타이밍이 꼬입니다. **"서버가 준비됐을 때 열고, 끝날 때 닫는다"**가 올바른 순서입니다.
-
-`wait=True`를 준 이유는 **연결 실패를 시작할 때 바로 알기 위해서**입니다. 없으면 서버는 멀쩡히 켜졌다가 첫 요청에서야 에러가 나서 원인 찾기가 헷갈립니다.
-
-#### ③ 연결을 빌려 쓰기
-
-```diff
--    with psycopg.connect(**CONN_INFO) as conn:
-+    with pool.connection() as conn:
-```
-
-**딱 한 줄 차이입니다.** `with` 블록이 끝나면 연결이 닫히는 게 아니라 **풀로 돌아가서 다음 요청을 기다립니다.** `/health`와 `/profile` 두 군데를 똑같이 바꿉니다.
-
-<details>
-<summary><b>▸ 트러블슈팅 — <code>'uvicorn'은(는) 내부 또는 외부 명령...이 아닙니다</code></b></summary>
-
-**증상**
-```
-C:\...\backend>uvicorn main:app --reload --port 8080
-'uvicorn'은(는) 내부 또는 외부 명령, 실행할 수 있는 프로그램, 또는
-배치 파일이 아닙니다.
-```
-
-**원인 — 가상환경이 활성화되지 않았습니다**
-
-프롬프트 맨 앞에 **`(.venv)` 가 없으면** 이 상태입니다.
-
-바로 위에서 실행한 `pip install` 메시지를 보면 증거가 있습니다.
-
-```
-C:\Users\...\AppData\Local\Python\pythoncore-3.14-64\python.exe -m pip ...
-                    ↑ 컴퓨터 전체 파이썬 (창고 밖)
-```
-
-패키지가 `.venv` 창고가 아니라 **컴퓨터 전체 파이썬에 설치**됐고, `uvicorn` 명령도 PATH에 없어서 못 찾는 것입니다.
-
-**해결 — 활성화부터**
-
-cmd
-```
-.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8080
-```
-
-PowerShell
-```powershell
-.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8080
-```
-
-macOS / Linux
-```bash
-source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8080
-```
-
-**또는 — 활성화 없이 창고를 직접 지목**
-
-cmd
-```
-.venv\Scripts\python.exe -m pip install -r requirements.txt
-.venv\Scripts\python.exe -m uvicorn main:app --reload --port 8080
-```
-
-macOS / Linux
-```bash
-.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m uvicorn main:app --reload --port 8080
-```
-
-> ✅ **습관 하나로 끝납니다.**
-> **터미널을 새로 열면 항상 비활성 상태입니다.** 명령을 치기 전에 `(.venv)` 가 있는지 보는 습관을 들이면 이 문제는 다시 안 생깁니다.
-> 컴퓨터 전체에 잘못 깔린 패키지는 그냥 두셔도 됩니다. 용량만 조금 차지할 뿐 문제를 일으키지 않습니다.
-
-</details>
-
-<details>
-<summary><b>▸ 트러블슈팅 — <code>ModuleNotFoundError: No module named 'psycopg_pool'</code></b></summary>
-
-**원인**
-위와 같은 문제입니다. `pip install`이 **다른 파이썬에 설치**했습니다. 또는 `requirements.txt`를 `psycopg[binary,pool]`로 바꾼 뒤 재설치를 안 했을 수도 있습니다.
-
-**해결**
-`(.venv)` 확인 후 다시 설치하세요.
-
-```
-pip install -r requirements.txt
-```
-
-설치가 제대로 됐는지 확인:
-
-```
-pip show psycopg-pool
-```
-
-</details>
-
-<details>
-<summary><b>▸ 트러블슈팅 — <code>404 프로필이 아직 없습니다</code></b></summary>
-
-**원인**
-테이블은 만들어졌는데 **데이터가 한 줄도 없습니다.** `insert` 문을 빼먹었거나 실행이 안 된 경우입니다.
-
-**해결 — SQL Editor에서 확인**
-
-```sql
-select * from public.profile;
-```
-
-`no rows`가 나오면 다시 넣으세요.
-
-```sql
-insert into public.profile (full_name, headline, summary)
-values ('내이름', '내 한 줄 소개', '조금 더 긴 소개글');
-```
-
-> ✅ 이건 **코드가 잘 동작한다는 증거**입니다. 404가 나왔다는 건 서버가 DB까지 잘 다녀왔다는 뜻이에요. 진짜로 데이터가 없었을 뿐입니다.
-
-</details>
-
----
-
-## 7. 코드 전체 (`backend/main.py`)
+## 6. 코드 전체 (`backend/main.py`)
 
 ```python
 import os
-from contextlib import asynccontextmanager
 from pathlib import Path
 
+import psycopg
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from psycopg.rows import dict_row
-from psycopg_pool import ConnectionPool
 
 # 어느 폴더에서 실행하든 backend/.env 를 찾도록 경로를 직접 지정한다.
 load_dotenv(Path(__file__).parent / ".env")
@@ -568,21 +308,7 @@ CONN_INFO = {
     "password": os.environ["DB_PASSWORD"],
 }
 
-# 커넥션 풀: 연결을 미리 열어두고 요청마다 빌려준다.
-# open=False 로 만들어 두고, 실제로 여는 것은 서버가 시작될 때(lifespan).
-pool = ConnectionPool(kwargs=CONN_INFO, min_size=1, max_size=5, open=False)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # 서버가 켜질 때 실행된다. wait=True 라서 연결에 실패하면 여기서 바로 알 수 있다.
-    pool.open(wait=True, timeout=10)
-    yield
-    # 서버가 꺼질 때 실행된다.
-    pool.close()
-
-
-app = FastAPI(title="MyHub", lifespan=lifespan)
+app = FastAPI(title="MyHub")
 
 
 @app.get("/")
@@ -592,7 +318,7 @@ def root():
 
 @app.get("/health")
 def health():
-    with pool.connection() as conn:
+    with psycopg.connect(**CONN_INFO) as conn:
         with conn.cursor() as cur:
             cur.execute("select version()")
             version = cur.fetchone()[0]
@@ -602,7 +328,7 @@ def health():
 
 @app.get("/profile")
 def get_profile():
-    with pool.connection() as conn:
+    with psycopg.connect(**CONN_INFO) as conn:
         # dict_row: 결과를 튜플이 아니라 {컬럼명: 값} 형태로 받는다.
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -625,7 +351,7 @@ def get_profile():
 
 ---
 
-## 8. 이번에 배운 개념
+## 7. 이번에 배운 개념
 
 | 용어 | 한 줄 설명 |
 |---|---|
@@ -636,13 +362,11 @@ def get_profile():
 | **RLS** | 행 단위 접근 제어. 켜면 기본이 "아무도 못 봄" |
 | **`revoke`** | 이미 준 권한을 회수하는 명령 |
 | **`dict_row`** | DB 결과를 튜플이 아니라 딕셔너리로 받게 하는 설정 |
-| **커넥션 풀** | DB 연결을 미리 열어두고 빌려주고 반납받는 구조 |
-| **`lifespan`** | 서버가 켜질 때와 꺼질 때 실행할 코드를 지정하는 곳 |
 | **404** | "그런 건 없다"는 HTTP 응답 코드 |
 
 ---
 
-## 9. 다음 단계 (Step 3)
+## 8. 다음 단계 (Step 3)
 
 > 🎯 **JSON 글자를 사람이 보는 이력서 페이지로 만듭니다.**
 > 여기부터 비로소 "웹사이트"가 됩니다.

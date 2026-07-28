@@ -27,6 +27,21 @@
 
 **겉보기 동작은 하나도 안 바뀝니다.** 화면도, API 응답도 그대로예요. 안쪽만 통째로 교체합니다.
 
+이 단계는 손으로 하나씩 짠 게 아니라, **AI 코딩 에이전트(Claude Code)에게 아래 프롬프트를 그대로 줘서** 만들었습니다.
+
+```
+이제는 SQLAlchemy를 도입하여 데이터 접근을 오브젝트 방식으로 변경할 것임.
+
+* 마이그레이션과 스키마 관리는 불필요함.
+* 현재의 테이블 정의를 파이썬 엔티티 클래스를 만들어서 이전.
+* 서버가 시작할 때 엔티티 기준으로 없는 테이블은 자동 생성하고 새 테이블은 비어있으니 초기 데이터 1건을 insert.
+* 기존에 구현된 기능들의 데이터베이스 접근을 raw SQL 대신 ORM 호출로 교체.
+* API의 주소와 응답 모양(OpenAPI 스펙)은 그대로 둠.
+* db.py, models.py, schemas.py 로 구현 내용을 적절히 분리하여야 함.
+```
+
+> 📌 **OpenAPI 스펙이 정말 그대로인지 직접 확인했습니다.** 리팩터링 전후로 `npm run gen:api` 를 두 번 돌려 생성된 `schema.d.ts` 를 `diff` 해봤는데 **한 글자도 다르지 않았습니다.** 안쪽 구현을 통째로 갈아엎어도 계약서(OpenAPI)가 그대로면 프론트엔드는 손댈 필요가 없다는 걸 프롬프트 하나로 실제로 확인한 셈입니다.
+
 ### 네 조각으로 나눠서 진행합니다
 
 | | 하는 일 | 확인 방법 |
@@ -34,7 +49,7 @@
 | **①** | SQLAlchemy 설치 · 파일 분리 · 엔티티 정의 | 기존 기능 그대로 동작 |
 | **②** | 서버 시작 시 테이블 자동 생성 + seed 1건 | 테이블을 지워도 다시 생김 |
 | **③** | 엔드포인트를 ORM 으로 교체 (raw SQL 제거) | 화면 동작 동일 |
-| **④** | 정리 | |
+| **④** | 정리 | 최종 구조 확인 |
 
 ### 바뀌는 것 한눈에
 
@@ -46,6 +61,7 @@
 | 수정 | `update ... set ...` | `entity.full_name = "..."` |
 | `updated_at` | UPDATE 문에 직접 적음 | 엔티티에 선언, 자동 갱신 |
 | SQL 인젝션 | 자리 표시를 꼼꼼히 써야 함 | **걱정거리 자체가 사라짐** |
+| DB 연결 | 요청마다 `psycopg.connect()` 로 새로 접속 | **엔진의 커넥션 풀이 재사용** |
 
 ---
 
@@ -67,17 +83,16 @@ Step 4 까지의 코드에서 **컬럼 목록을 네 군데에 반복해서** �
 
 ```python
 # ① SELECT 문
-select id, full_name, headline, summary, updated_at from public.profile
+select full_name, headline, summary, updated_at from public.profile
 
 # ② UPDATE 문
 update public.profile set full_name = %(full_name)s, headline = ...
 
 # ③ RETURNING 절
-returning id, full_name, headline, summary, updated_at
+returning full_name, headline, summary, updated_at
 
 # ④ Pydantic DTO
 class Profile(BaseModel):
-    id: int
     full_name: str
     ...
 ```
@@ -118,27 +133,30 @@ itsdangerous
 pip install -r requirements.txt
 ```
 
-> `psycopg` 는 계속 필요합니다. **SQLAlchemy 가 PostgreSQL 과 대화할 때 쓰는 드라이버**거든요. 다만 `[pool]` 은 뺐습니다 — SQLAlchemy 엔진이 자체 커넥션 풀을 갖고 있어서 중복입니다.
+> `psycopg` 는 계속 필요합니다. **SQLAlchemy 가 PostgreSQL 과 대화할 때 쓰는 드라이버**거든요. 커넥션 풀도 이제 필요 없이 저절로 생깁니다 — **엔진이 자체적으로 관리**하기 때문입니다. Step 4 까지는 요청마다 `psycopg.connect()` 로 새로 접속했는데, 그 연결-재사용 로직을 우리가 짤 필요가 없어진 셈입니다.
 
 ### 3.2 `db.py` — 엔진과 세션
 
 ```python
+import os
+from collections.abc import Iterator
+
+from dotenv import load_dotenv
+from sqlalchemy import URL, create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
+load_dotenv()
+
 DATABASE_URL = URL.create(
     "postgresql+psycopg",
-    username=os.environ["DB_USER"],
-    password=os.environ["DB_PASSWORD"],
-    host=os.environ["DB_HOST"],
-    port=int(os.environ["DB_PORT"]),
-    database=os.environ["DB_NAME"],
+    username=os.getenv("DB_USER", "postgres"),
+    password=os.getenv("DB_PASSWORD"),
+    host=os.getenv("DB_HOST"),
+    port=int(os.getenv("DB_PORT", "5432")),
+    database=os.getenv("DB_NAME", "postgres"),
 )
 
-engine = create_engine(
-    DATABASE_URL,
-    pool_size=5,
-    max_overflow=0,
-    pool_pre_ping=True,
-    echo=False,
-)
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, echo=False)
 
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
@@ -203,12 +221,18 @@ print(profile.full_name)   # ← 여기서 SELECT 가 한 번 더 나감
 ### 3.3 `models.py` — 엔티티 (테이블의 모양)
 
 ```python
+from datetime import datetime
+
+from sqlalchemy import BigInteger, DateTime, Identity, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from db import Base
+
+
 class Profile(Base):
     __tablename__ = "profile"
 
-    id: Mapped[int] = mapped_column(
-        BigInteger, Identity(always=True), primary_key=True
-    )
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
     full_name: Mapped[str] = mapped_column(Text, nullable=False)
     headline: Mapped[str] = mapped_column(Text, nullable=False)
     summary: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -233,14 +257,24 @@ class Profile(Base):
 ### 3.4 `schemas.py` — DTO (API 의 모양)
 
 ```python
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
 class Profile(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: int
     full_name: str
     headline: str
     summary: str | None
     updated_at: datetime
+
+
+class ProfileUpdate(BaseModel):
+    full_name: str = Field(min_length=1, max_length=100)
+    headline: str = Field(min_length=1, max_length=200)
+    summary: str | None = Field(default=None, max_length=2000)
 ```
 
 <details>
@@ -261,8 +295,10 @@ schemas.Profile   # DTO   — API 의 모양
 **② 테이블 구조 ≠ API 형태**
 경력을 보여줄 때 API 는 `{"experiences": [{"org": "...", "highlights": [...]}]}` 가 자연스럽지만, DB 에서는 두 테이블로 나뉘어 있습니다.
 
-**③ 읽기와 쓰기도 다름**
-`schemas.ProfileUpdate` 에는 `id` 와 `updated_at` 이 없습니다. 클라이언트가 정할 값이 아니니까요.
+**③ 지금 당장도 이미 다릅니다**
+`models.Profile` 에는 `id` 가 있지만 `schemas.Profile` 에는 없습니다. Step 3 부터 API 응답이 `id` 를 내보낸 적이 없기 때문입니다. `from_attributes=True` 를 써도 **Pydantic 은 자신이 선언한 필드만 꺼내 쓰므로** ORM 객체에 `id` 가 얹혀 있어도 그냥 무시됩니다.
+
+`schemas.ProfileUpdate` 에도 `id` 와 `updated_at` 이 없습니다 — 둘 다 클라이언트가 정할 값이 아니니까요.
 
 **이름이 겹쳐서 불편한 게 아니라, 원래 분리되어야 할 것이 이제야 분리된 것**입니다.
 
@@ -340,15 +376,69 @@ Base.metadata.create_all(engine)
 
 **"있는지 확인하고 없으면 생성"을 우리가 짤 필요가 없습니다.**
 
-### 4.2 `init_db.py`
+### 4.2 `init_db.py` — 생성 · 잠금 · seed 을 한 파일에
 
 ```python
+import argparse
+
+from sqlalchemy import inspect, select, text
+
+import models
+from db import Base, SessionLocal, engine
+
+
 def create_tables() -> list[str]:
     """새로 만들어진 테이블 이름 목록을 돌려준다."""
     before = set(inspect(engine).get_table_names(schema="public"))
-    Base.metadata.create_all(engine)          # ← 확인 + 생성
+    Base.metadata.create_all(engine)  # checkfirst=True 가 기본값이라 없는 테이블만 만든다.
     after = set(inspect(engine).get_table_names(schema="public"))
     return sorted(after - before)
+
+
+def lock_down(table_names: list[str]) -> None:
+    with engine.begin() as conn:
+        for name in table_names:
+            conn.execute(text(f'alter table public."{name}" enable row level security'))
+            conn.execute(text(f'revoke all on table public."{name}" from anon, authenticated'))
+
+
+def seed() -> None:
+    with SessionLocal() as db:
+        if db.scalars(select(models.Profile)).first() is not None:
+            return
+        db.add(
+            models.Profile(
+                full_name="백영민",
+                headline="백엔드 개발자",
+                summary="온라인 이력서를 직접 만들고 있습니다.",
+            )
+        )
+        db.commit()
+        print("[init] 초기 데이터 1건 입력")
+
+
+def init_database() -> None:
+    new_tables = create_tables()
+    if new_tables:
+        lock_down(new_tables)
+        print(f"[init] 테이블 생성 + 잠금: {', '.join(new_tables)}")
+    seed()
+
+
+def reset() -> None:
+    Base.metadata.drop_all(engine)
+    init_database()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reset", action="store_true", help="기존 테이블을 지우고 다시 만든다.")
+    args = parser.parse_args()
+
+    if args.reset:
+        reset()
+    else:
+        init_database()
 ```
 
 `inspect()` 는 **생성 여부를 판단하려는 게 아닙니다.** 그건 `create_all` 이 이미 합니다. "이번에 뭐가 새로 생겼는지"를 알아내서 **로그와 잠금 대상**으로 쓰려는 것입니다.
@@ -362,7 +452,7 @@ alter table public.profile enable row level security;
 revoke all on table public.profile from anon, authenticated;
 ```
 
-이제 `lock_down()` 이 엔티티 목록을 돌면서 처리합니다. **테이블이 10개로 늘어도 빠뜨릴 일이 없습니다.**
+이제 `lock_down()` 이 **새로 생긴** 테이블 이름을 돌면서 처리합니다. **테이블이 10개로 늘어도 빠뜨릴 일이 없고**, 이미 있던 테이블을 매번 다시 잠그려 들지도 않습니다.
 
 <details>
 <summary><b>▸ 여기서는 SQL 을 문자열로 조립합니다 — 괜찮은가요?</b></summary>
@@ -387,7 +477,18 @@ text("alter table :name enable ...")     # ❌ 이름은 불가능
 
 </details>
 
-### 4.4 서버 시작 때 실행
+### 4.4 초기 데이터 한 건
+
+`seed()` 는 **테이블에 행이 하나도 없을 때만** 실행됩니다.
+
+```python
+if db.scalars(select(models.Profile)).first() is not None:
+    return
+```
+
+`select(models.Profile)` 로 아무거나 한 줄만 찾아보고, 있으면 그냥 돌아갑니다. **여러 번 실행해도 두 번째부터는 아무 일도 안 일어납니다.**
+
+### 4.5 서버 시작 때 실행
 
 `backend/main.py`
 
@@ -399,11 +500,14 @@ async def lifespan(app: FastAPI):
     init_database()
     yield
     engine.dispose()
+
+
+app = FastAPI(lifespan=lifespan)
 ```
 
 **여러 번 실행해도 안전**하므로 매번 시작할 때 호출합니다.
 
-### 4.5 확인
+### 4.6 확인
 
 **테이블을 지워보고** 서버를 켜보세요.
 
@@ -419,7 +523,7 @@ INFO:     Application startup complete.
 
 두 번째 시작부터는 `[init]` 줄이 **안 나옵니다.** 이미 있으니 아무것도 안 하는 거예요.
 
-### 4.6 통째로 다시 만들기
+### 4.7 통째로 다시 만들기
 
 ```
 python init_db.py --reset
@@ -476,7 +580,9 @@ python init_db.py --reset
 ### 5.1 수정 로직 — 이게 가장 극적으로 바뀝니다
 
 ```diff
--    with pool.connection() as conn:
+-@app.put("/api/profile", response_model=ProfileResponse, dependencies=[Depends(require_admin)])
+-def update_profile(body: ProfileUpdate):
+-    with psycopg.connect(**DB_CONFIG, connect_timeout=5) as conn:
 -        with conn.cursor(row_factory=dict_row) as cur:
 -            cur.execute(
 -                """
@@ -486,7 +592,7 @@ python init_db.py --reset
 -                       summary    = %(summary)s,
 -                       updated_at = now()
 -                 where id = (select id from public.profile order by id limit 1)
--             returning id, full_name, headline, summary, updated_at
+-             returning full_name, headline, summary, updated_at
 -                """,
 -                body.model_dump(),
 -            )
@@ -495,7 +601,9 @@ python init_db.py --reset
 -    if row is None:
 -        raise HTTPException(status_code=404, detail="프로필이 아직 없습니다.")
 -
--    return schemas.ProfileResponse(profile=schemas.Profile(**row))
+-    return ProfileResponse(profile=Profile(**row))
++@app.put("/api/profile", response_model=schemas.ProfileResponse, dependencies=[Depends(require_admin)])
++def update_profile(body: schemas.ProfileUpdate, db: Session = Depends(get_db)):
 +    entity = load_profile(db)
 +
 +    entity.full_name = body.full_name
@@ -525,6 +633,8 @@ def load_profile(db: Session) -> models.Profile:
 `select(models.Profile)` — **SQL 문자열이 아니라 파이썬 표현식**입니다. 컬럼 이름을 오타 내면 편집기가 바로 잡아줍니다.
 
 `db.scalars(...)` 는 "행 전체가 아니라 **객체 하나씩** 꺼내라"는 뜻입니다.
+
+`get_profile` 과 `update_profile` 이 이 함수 하나를 같이 씁니다 — 첫 줄을 찾는 로직이 두 곳에 흩어지지 않습니다.
 
 ### 5.3 수정은 속성 대입으로
 
@@ -569,7 +679,7 @@ Step 4 에서 `RETURNING` 으로 한 번에 끝냈던 걸 세 번에 나눠 합�
 ### 5.6 `text()` — ORM 을 써도 raw SQL 은 쓸 수 있습니다
 
 ```python
-@app.get("/api/health")
+@app.get("/api/health", response_model=schemas.HealthResponse)
 def health(db: Session = Depends(get_db)):
     version = db.scalar(text("select version()"))
     ...
@@ -594,7 +704,7 @@ def get_profile(db: Session = Depends(get_db)):
 
 `yield` 앞이 준비, 뒤가 정리 — `lifespan` 과 같은 구조인데 범위가 "서버 전체"가 아니라 **"요청 하나"** 입니다.
 
-psycopg 풀은 통째로 지웠습니다. **SQLAlchemy 엔진이 자체 커넥션 풀을 갖고 있어서** 중복이거든요.
+Step 4 까지는 요청마다 `psycopg.connect()` 로 새로 접속했습니다. 이제는 **SQLAlchemy 엔진이 자체 커넥션 풀을 갖고 있어서** 세션 뒤에서 연결을 재사용합니다 — 우리가 직접 짜지 않아도 따라온 부수 효과입니다.
 
 ### 5.8 SQL 인젝션 걱정이 사라졌습니다
 
@@ -620,31 +730,292 @@ db.commit()
 DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_PASSWORD
 ```
 
-하나라도 없으면 `KeyError` 로 서버가 시작조차 안 됩니다. 시작은 됐는데 연결이 안 된다면 **값이 틀린** 것입니다.
+값이 비어 있으면 `URL.create()` 에 `None` 이 그대로 들어가 접속 자체가 실패합니다.
 
 **확인 2 — Session pooler 주소인가**
 `db.[프로젝트ID].supabase.co` 로 시작하는 **직접 연결 주소는 IPv6 전용**이라 실패할 수 있습니다. Supabase → Connect → Session pooler 의 주소를 쓰세요.
 
 **확인 3 — 비밀번호에 특수문자**
-`URL.create()` 를 쓰므로 값 자체는 안전합니다. 다만 **`.env` 파일에 적을 때**는 작은따옴표로 감싸는 게 안전합니다. (Step 4 트러블슈팅 참고)
+`URL.create()` 를 쓰므로 값 자체는 안전하게 조립됩니다. 다만 **`.env` 파일에 적을 때**는 작은따옴표로 감싸는 게 안전합니다.
 
 </details>
 
 ---
 
-## 6. ④ 정리
+## 6. 코드 전체
 
-### 6.1 안 쓰는 패키지
+### `backend/db.py`
 
-`psycopg-pool` 은 이제 안 씁니다. 지워도 되고 둬도 무방합니다.
+```python
+import os
+from collections.abc import Iterator
 
+from dotenv import load_dotenv
+from sqlalchemy import URL, create_engine
+from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+
+load_dotenv()
+
+DATABASE_URL = URL.create(
+    "postgresql+psycopg",
+    username=os.getenv("DB_USER", "postgres"),
+    password=os.getenv("DB_PASSWORD"),
+    host=os.getenv("DB_HOST"),
+    port=int(os.getenv("DB_PORT", "5432")),
+    database=os.getenv("DB_NAME", "postgres"),
+)
+
+engine = create_engine(DATABASE_URL, pool_pre_ping=True, echo=False)
+
+SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
+
+
+class Base(DeclarativeBase):
+    """이 클래스를 상속하면 SQLAlchemy 가 '이건 테이블이다'라고 인식한다."""
+
+
+def get_db() -> Iterator[Session]:
+    with SessionLocal() as session:
+        yield session
 ```
-pip uninstall psycopg-pool
+
+### `backend/models.py`
+
+```python
+from datetime import datetime
+
+from sqlalchemy import BigInteger, DateTime, Identity, Text, func
+from sqlalchemy.orm import Mapped, mapped_column
+
+from db import Base
+
+
+class Profile(Base):
+    __tablename__ = "profile"
+
+    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    full_name: Mapped[str] = mapped_column(Text, nullable=False)
+    headline: Mapped[str] = mapped_column(Text, nullable=False)
+    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
 ```
 
-> `psycopg` 와 `psycopg-binary` 는 **계속 필요합니다.** SQLAlchemy 의 드라이버거든요.
+### `backend/schemas.py`
 
-### 6.2 최종 구조
+```python
+from datetime import datetime
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class HealthResponse(BaseModel):
+    status: str
+    database: str
+    version: str
+
+
+class Profile(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    full_name: str
+    headline: str
+    summary: str | None
+    updated_at: datetime
+
+
+class ProfileResponse(BaseModel):
+    profile: Profile
+
+
+class ProfileUpdate(BaseModel):
+    full_name: str = Field(min_length=1, max_length=100)
+    headline: str = Field(min_length=1, max_length=200)
+    summary: str | None = Field(default=None, max_length=2000)
+
+
+class LoginRequest(BaseModel):
+    passcode: str
+
+
+class SessionResponse(BaseModel):
+    authenticated: bool
+```
+
+### `backend/init_db.py`
+
+```python
+import argparse
+
+from sqlalchemy import inspect, select, text
+
+import models
+from db import Base, SessionLocal, engine
+
+
+def create_tables() -> list[str]:
+    """새로 만들어진 테이블 이름 목록을 돌려준다."""
+    before = set(inspect(engine).get_table_names(schema="public"))
+    Base.metadata.create_all(engine)  # checkfirst=True 가 기본값이라 없는 테이블만 만든다.
+    after = set(inspect(engine).get_table_names(schema="public"))
+    return sorted(after - before)
+
+
+def lock_down(table_names: list[str]) -> None:
+    with engine.begin() as conn:
+        for name in table_names:
+            conn.execute(text(f'alter table public."{name}" enable row level security'))
+            conn.execute(text(f'revoke all on table public."{name}" from anon, authenticated'))
+
+
+def seed() -> None:
+    with SessionLocal() as db:
+        if db.scalars(select(models.Profile)).first() is not None:
+            return
+        db.add(
+            models.Profile(
+                full_name="백영민",
+                headline="백엔드 개발자",
+                summary="온라인 이력서를 직접 만들고 있습니다.",
+            )
+        )
+        db.commit()
+        print("[init] 초기 데이터 1건 입력")
+
+
+def init_database() -> None:
+    new_tables = create_tables()
+    if new_tables:
+        lock_down(new_tables)
+        print(f"[init] 테이블 생성 + 잠금: {', '.join(new_tables)}")
+    seed()
+
+
+def reset() -> None:
+    Base.metadata.drop_all(engine)
+    init_database()
+
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--reset", action="store_true", help="기존 테이블을 지우고 다시 만든다.")
+    args = parser.parse_args()
+
+    if args.reset:
+        reset()
+    else:
+        init_database()
+```
+
+### `backend/main.py`
+
+```python
+import os
+import secrets
+from contextlib import asynccontextmanager
+
+from dotenv import load_dotenv
+from fastapi import Depends, FastAPI, HTTPException, Request
+from sqlalchemy import select, text
+from sqlalchemy.orm import Session
+from starlette.middleware.sessions import SessionMiddleware
+
+import models
+import schemas
+from db import engine, get_db
+from init_db import init_database
+
+load_dotenv()
+
+ADMIN_PASSCODE = os.environ["ADMIN_PASSCODE"]
+SESSION_SECRET = os.environ["SESSION_SECRET"]
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # 엔티티 기준으로 테이블이 있는지 확인하고, 없으면 만든다.
+    # 비어 있으면 화면에 보여줄 한 건을 넣는다.
+    init_database()
+    yield
+    engine.dispose()
+
+
+app = FastAPI(lifespan=lifespan)
+app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, session_cookie="myhub_session")
+
+
+def require_admin(request: Request) -> None:
+    if not request.session.get("admin"):
+        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
+
+
+def load_profile(db: Session) -> models.Profile:
+    profile = db.scalars(select(models.Profile).order_by(models.Profile.id).limit(1)).first()
+
+    if profile is None:
+        raise HTTPException(status_code=404, detail="프로필이 아직 없습니다.")
+
+    return profile
+
+
+@app.get("/api/health", response_model=schemas.HealthResponse)
+def health(db: Session = Depends(get_db)):
+    try:
+        version = db.scalar(text("select version()"))
+        return schemas.HealthResponse(status="ok", database="connected", version=version)
+    except Exception as e:
+        raise HTTPException(status_code=503, detail={"status": "error", "database": "disconnected", "error": str(e)})
+
+
+@app.get("/api/profile", response_model=schemas.ProfileResponse)
+def get_profile(db: Session = Depends(get_db)):
+    entity = load_profile(db)
+    return schemas.ProfileResponse(profile=schemas.Profile.model_validate(entity))
+
+
+@app.put("/api/profile", response_model=schemas.ProfileResponse, dependencies=[Depends(require_admin)])
+def update_profile(body: schemas.ProfileUpdate, db: Session = Depends(get_db)):
+    entity = load_profile(db)
+
+    entity.full_name = body.full_name
+    entity.headline = body.headline
+    entity.summary = body.summary
+
+    db.commit()
+    db.refresh(entity)
+
+    return schemas.ProfileResponse(profile=schemas.Profile.model_validate(entity))
+
+
+@app.post("/api/auth/session", response_model=schemas.SessionResponse)
+def login(body: schemas.LoginRequest, request: Request):
+    if not secrets.compare_digest(body.passcode.encode("utf-8"), ADMIN_PASSCODE.encode("utf-8")):
+        raise HTTPException(status_code=401, detail="비밀코드가 올바르지 않습니다.")
+
+    request.session["admin"] = True
+    return schemas.SessionResponse(authenticated=True)
+
+
+@app.get("/api/auth/session", response_model=schemas.SessionResponse)
+def check_session(request: Request):
+    return schemas.SessionResponse(authenticated=bool(request.session.get("admin")))
+
+
+@app.delete("/api/auth/session", response_model=schemas.SessionResponse)
+def logout(request: Request):
+    request.session.clear()
+    return schemas.SessionResponse(authenticated=False)
+```
+
+---
+
+## 7. ④ 정리
+
+### 7.1 최종 구조
 
 ```
 backend/
@@ -658,7 +1029,7 @@ backend/
 
 **Step 4 까지는 `main.py` 하나에 전부 있었습니다.** ORM 을 넣으면서 자연스럽게 나뉜 거예요 — 미리 나눈 게 아니라, **나눌 이유가 생겨서** 나눴습니다.
 
-### 6.3 프론트엔드는 손대지 않았습니다
+### 7.2 프론트엔드는 손대지 않았습니다
 
 API 의 주소도 응답 모양도 그대로라 **`npm run gen:api` 조차 필요 없습니다.**
 
@@ -666,7 +1037,7 @@ API 의 주소도 응답 모양도 그대로라 **`npm run gen:api` 조차 필�
 
 ---
 
-## 7. 이번에 배운 개념
+## 8. 이번에 배운 개념
 
 | 용어 | 한 줄 설명 |
 |---|---|
@@ -687,14 +1058,14 @@ API 의 주소도 응답 모양도 그대로라 **`npm run gen:api` 조차 필�
 
 ---
 
-## 8. 여기까지의 여정
+## 9. 여기까지의 여정
 
 ```
-Step 1   브라우저 → FastAPI → Supabase            길을 뚫었다
-Step 2   테이블 + API                              실을 짐을 만들었다
-Step 3   React + 타입 자동 생성                     사람이 보는 화면
-Step 4   로그인 + 편집                              내가 관리할 수 있게
-Step 5   ORM                                        SQL 없이 다루게
+Step 1   브라우저 → FastAPI → Supabase            데이터를 쌓을 곳을 마련했다
+Step 2   테이블 + API                             데이터를 쌓아보고 이걸 확인했다
+Step 3   React + 타입 자동 생성                    쌓은 데이터를 보여줄 수 있게 되었다
+Step 4   로그인 + 편집                             쌓은 데이터를 편집할 수 있게 되었다
+Step 5   ORM                                    쌓은 데이터를 우아하게 편집할 수 있게 되었다
 ```
 
 **뼈대가 완성됐습니다.** 이제 이력서 항목(경력·프로젝트·학력·스킬)을 늘리는 일은 **같은 패턴의 반복**입니다.

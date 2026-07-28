@@ -1,0 +1,109 @@
+.cv {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 24px;
+  text-align: left;
+  word-break: keep-all;
+}
+
+.cv-header h1 {
+  margin: 0 0 8px;
+}
+
+.headline {
+  color: var(--text-h);
+  font-weight: 500;
+}
+
+.summary {
+  margin-top: 16px;
+  white-space: pre-wrap;
+}
+
+.cv-footer {
+  margin-top: 32px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.state {
+  text-align: center;
+  margin-top: 48px;
+}
+
+.state.error {
+  color: #d33;
+}
+
+.link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+}
+
+.editable {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  font: inherit;
+  color: inherit;
+  background: var(--code-bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.2em 0.45em;
+  margin: 0 0 8px;
+}
+
+.editable.title {
+  font-size: 56px;
+  font-weight: 500;
+}
+
+.editable.headline {
+  font-weight: 500;
+}
+
+.editable.summary {
+  margin-top: 16px;
+  min-height: 6em;
+  resize: vertical;
+}
+
+.edit-actions {
+  justify-content: flex-start;
+}
+
+.edit-actions button,
+.login button {
+  font: inherit;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  color: var(--text-h);
+  cursor: pointer;
+}
+
+.login {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.login input {
+  font: inherit;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+}
