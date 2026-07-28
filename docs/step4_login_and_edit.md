@@ -17,7 +17,7 @@
 
 ---
 
-## 1. 이 단계의 목표
+## 4-1. 이 단계의 목표
 
 > 🎯 **Supabase 대시보드에 들어가지 않고, 웹에서 이력서를 고칠 수 있게 만드는 것.**
 
@@ -45,7 +45,7 @@ Supabase에 있는 데이터(profile) 수정을 FE 웹 페이지를 통해서 �
 
 ---
 
-## 2. 완성된 모습
+## 4-2. 완성된 모습
 
 **편집용 페이지를 따로 만들지 않습니다.** 보고 있던 이력서 화면에서 그대로 고칩니다.
 
@@ -78,9 +78,9 @@ Supabase에 있는 데이터(profile) 수정을 FE 웹 페이지를 통해서 �
 
 ---
 
-## 3. ① 백엔드 — 로그인과 수정 엔드포인트
+## 4-3. ① 백엔드 — 로그인과 수정 엔드포인트
 
-### 3.1 새로 생긴 주소
+### 4-3.1 새로 생긴 주소
 
 ```
 POST   /api/auth/session   비밀코드 보내기  →  로그인
@@ -89,7 +89,7 @@ DELETE /api/auth/session   로그아웃
 PUT    /api/profile        프로필 수정 (로그인 필요)
 ```
 
-### 3.2 환경변수 추가
+### 4-3.2 환경변수 추가
 
 `backend/.env` 에 두 줄 추가합니다. `.env.example` 에 양식이 있습니다.
 
@@ -104,7 +104,7 @@ python -c "import secrets; print(secrets.token_hex(32))"
 
 `requirements.txt` 에는 `itsdangerous` 가 추가됩니다 — 세션 쿠키에 서명하는 데 씁니다.
 
-### 3.3 세션과 문지기
+### 4-3.3 세션과 문지기
 
 ```python
 from starlette.middleware.sessions import SessionMiddleware
@@ -121,7 +121,7 @@ def require_admin(request: Request) -> None:
 
 `dependencies=[Depends(require_admin)]` 를 엔드포인트에 붙이면 그 주소는 로그인 필수가 됩니다.
 
-### 3.4 로그인 · 상태 확인 · 로그아웃
+### 4-3.4 로그인 · 상태 확인 · 로그아웃
 
 ```python
 @app.post("/api/auth/session", response_model=SessionResponse)
@@ -146,7 +146,7 @@ def logout(request: Request):
 
 `secrets.compare_digest` 로 비밀코드를 비교하는 것 말고는 특별한 게 없습니다. 비밀코드는 로그인할 때 한 번만 쓰이고, 그다음부터는 쿠키로 인증합니다.
 
-### 3.5 수정 엔드포인트
+### 4-3.5 수정 엔드포인트
 
 ```python
 class ProfileUpdate(BaseModel):
@@ -196,9 +196,9 @@ npm run gen:api
 
 ---
 
-## 4. ② 프론트엔드 — 제자리 편집
+## 4-4. ② 프론트엔드 — 제자리 편집
 
-### 4.1 API 호출 추가
+### 4-4.1 API 호출 추가
 
 `src/api/client.ts` 에 세션·수정 관련 함수를 추가합니다.
 
@@ -245,7 +245,7 @@ export async function updateProfile(body: ProfileUpdate): Promise<ProfileRespons
 
 `ApiError` 에 HTTP 상태 코드를 담아둔 게 핵심입니다. 메시지 문자열만으로는 "401이면 로그인 화면으로" 같은 판단을 할 수 없기 때문입니다.
 
-### 4.2 화면 상태
+### 4-4.2 화면 상태
 
 ```ts
 const [profile, setProfile] = useState<Profile | null>(null)
@@ -261,7 +261,7 @@ const [draft, setDraft] = useState<ProfileUpdate | null>(null)
 
 페이지가 뜨면 `getProfile()` 과 `checkSession()` 을 동시에 호출합니다. 프로필은 누구에게나 보여야 하므로 로그인 여부를 기다리지 않고, 로그인돼 있었다면 도착하는 대로 편집 화면으로 전환됩니다.
 
-### 4.3 저장 중 세션이 끊기면
+### 4-4.3 저장 중 세션이 끊기면
 
 ```ts
 try {
@@ -280,7 +280,7 @@ try {
 
 **401만 따로 잡아서** 로그인 화면으로 돌려보냅니다. 그 외의 실패(네트워크 오류, 422 검증 실패 등)는 편집 화면에 그대로 메시지만 띄웁니다.
 
-### 4.4 입력칸이 글자와 같은 자리를 씁니다
+### 4-4.4 입력칸이 글자와 같은 자리를 씁니다
 
 ```css
 .editable {
@@ -293,7 +293,7 @@ try {
 
 ---
 
-## 5. 코드 전체
+## 4-5. 코드 전체
 
 ### `backend/main.py`
 
@@ -689,7 +689,7 @@ export default App
 
 ---
 
-## 6. 이번에 배운 개념
+## 4-6. 이번에 배운 개념
 
 | 용어 | 한 줄 설명 |
 |---|---|
@@ -702,7 +702,7 @@ export default App
 
 ---
 
-## 7. 다음 단계 (Step 5)
+## 4-7. 다음 단계 (Step 5)
 
 > 🎯 **SQL 을 직접 쓰지 않고, 파이썬 클래스로 데이터베이스를 다룹니다.**
 

@@ -20,7 +20,7 @@
 
 ---
 
-## 1. 이 단계의 목표
+## 3-1. 이 단계의 목표
 
 > 🎯 **JSON 글자를 사람이 보는 이력서 페이지로 만드는 것.**
 > 여기부터 비로소 "웹사이트"가 됩니다.
@@ -45,25 +45,6 @@
 | **④** | 이력서 스타일 입히기 | 다크모드·인쇄까지 되는 이력서 |
 | **⑤** | `openapi-fetch` | 주소 오타까지 타입 검사 |
 
-### 이 스텝은 이 프롬프트로 만들었습니다
-
-이 다섯 조각은 손으로 하나씩 짠 게 아니라, **AI 코딩 에이전트(Claude Code)에게 아래 프롬프트를 그대로 줘서** 만들었습니다.
-
-```
-`frontend` 디렉토리에 다음 기술스택을 갖는 프론트엔드 프로젝트 초기화.
-
-* Typescript 기반 React
-* Vite 빌드, 개발서버
-
-backend(FastAPI, 8080번 포트)가 제공하는 프로필 데이터를 사람이 보는 이력서 화면으로 표시하는 기능을 미니멀하게 구현.
-
-* 개발 중에는 Vite 프록시로 `/api`로 시작하는 요청을 BE에 그대로 전달.
-* BE 응답 스키마는 Pydantic DTO로 스키마를 명시됨. 이 OpenAPI 스펙(`/openapi.json`)에서 TS 타입을 자동 생성하고 프론트엔드에서는 이 타입만을 이용하여야 함.
-* BE가 데이터베이스에서 읽어와서 제공하는 이름, 한 줄 소개, 상세 소개, 마지막 수정 시각을 화면에 표시.
-```
-
-> 📌 **AI가 만든 초안을 그대로 쓰지는 않았습니다.** `/health`·`/profile` 주소에 `/api` 접두사를 붙이고 프록시를 연결하는 것, `response_model`로 Pydantic DTO를 노출하는 것, 그리고 타입 생성 스크립트(`gen:api`)까지는 프롬프트 한 번으로 나왔습니다. 다크모드·인쇄 CSS(6장)와 `openapi-fetch`로의 전환(7장)은 그 위에 이어서 다듬은 부분입니다.
-
 ### 왜 Vanilla가 아니라 React인가
 
 간단한 화면이라면 순수 HTML/JS로도 됩니다. 하지만 **나중에 갈아타는 비용이 훨씬 비쌉니다.**
@@ -77,7 +58,7 @@ backend(FastAPI, 8080번 포트)가 제공하는 프로필 데이터를 사람�
 
 ---
 
-## 2. 시작 전 확인
+## 3-2. 시작 전 확인
 
 Node.js가 필요합니다.
 
@@ -92,7 +73,7 @@ npm -v
 
 ---
 
-## 3. ① React 프로젝트 만들기
+## 3-3. ① React 프로젝트 만들기
 
 ### 터미널을 하나 더 엽니다
 
@@ -192,9 +173,28 @@ project-root/
 
 **두 서버가 각각 다른 포트에서 돌고 있습니다.** 아직 서로 모르는 사이입니다.
 
+### 이 스텝은 이 프롬프트로 만들었습니다
+
+여기까지 만든 `frontend` 프로젝트 위에서, 남은 네 조각(②~⑤)은 손으로 하나씩 짠 게 아니라 **AI 코딩 에이전트(Claude Code)에게 아래 프롬프트를 그대로 줘서** 만들었습니다.
+
+```
+`frontend` 디렉토리에 다음 기술스택을 갖는 프론트엔드 프로젝트 초기화.
+
+* Typescript 기반 React
+* Vite 빌드, 개발서버
+
+backend(FastAPI, 8080번 포트)가 제공하는 프로필 데이터를 사람이 보는 이력서 화면으로 표시하는 기능을 미니멀하게 구현.
+
+* 개발 중에는 Vite 프록시로 `/api`로 시작하는 요청을 BE에 그대로 전달.
+* BE 응답 스키마는 Pydantic DTO로 스키마를 명시됨. 이 OpenAPI 스펙(`/openapi.json`)에서 TS 타입을 자동 생성하고 프론트엔드에서는 이 타입만을 이용하여야 함.
+* BE가 데이터베이스에서 읽어와서 제공하는 이름, 한 줄 소개, 상세 소개, 마지막 수정 시각을 화면에 표시.
+```
+
+> 📌 **AI가 만든 초안을 그대로 쓰지는 않았습니다.** `/health`·`/profile` 주소에 `/api` 접두사를 붙이고 프록시를 연결하는 것, `response_model`로 Pydantic DTO를 노출하는 것, 그리고 타입 생성 스크립트(`gen:api`)까지는 프롬프트 한 번으로 나왔습니다. 다크모드·인쇄 CSS(3-6장)와 `openapi-fetch`로의 전환(3-7장)은 그 위에 이어서 다듬은 부분입니다.
+
 ---
 
-## 4. ② 프록시로 백엔드 연결하기
+## 3-4. ② 프록시로 백엔드 연결하기
 
 ### 먼저 백엔드 주소에 `/api` 를 붙입니다
 
@@ -277,9 +277,9 @@ server: {
 
 ---
 
-## 5. ③ Pydantic DTO와 타입 자동 생성
+## 3-5. ③ Pydantic DTO와 타입 자동 생성
 
-### 5.1 먼저 백엔드에 "응답의 모양"을 명시해야 합니다
+### 3-5.1 먼저 백엔드에 "응답의 모양"을 명시해야 합니다
 
 Step 2까지 백엔드는 이렇게 응답했습니다.
 
@@ -293,7 +293,7 @@ FastAPI 입장에서 이건 **"딕셔너리 하나"** 일 뿐, 안에 뭐가 들
 
 > FE를 포함한 외부로 나가는 모든 데이터는 **Pydantic DTO**를 통해 정의된 스키마를 이용하며, 데이터베이스와 직접 연결된 엔티티의 원형은 이용하지 않는다.
 
-### 5.2 DTO 작성
+### 3-5.2 DTO 작성
 
 ```python
 from datetime import datetime
@@ -360,7 +360,7 @@ Pydantic DTO  →  OpenAPI 문서  →  TypeScript 타입
 
 </details>
 
-### 5.3 확인 — OpenAPI 문서에 모양이 들어갔나
+### 3-5.3 확인 — OpenAPI 문서에 모양이 들어갔나
 
 **http://127.0.0.1:8080/openapi.json** 에서 `Profile`을 찾아보세요.
 
@@ -377,7 +377,7 @@ Pydantic DTO  →  OpenAPI 문서  →  TypeScript 타입
 }
 ```
 
-### 5.4 타입 생성 명령 등록
+### 3-5.4 타입 생성 명령 등록
 
 `frontend/package.json`의 `scripts`에 추가합니다.
 
@@ -485,7 +485,7 @@ npm install -D openapi-typescript --legacy-peer-deps
 
 </details>
 
-### 5.5 생성된 타입 쓰기
+### 3-5.5 생성된 타입 쓰기
 
 ```
 frontend/src/api/
@@ -528,7 +528,7 @@ npm run gen:api
 
 </details>
 
-### 5.6 이게 왜 중요한지 직접 확인
+### 3-5.6 이게 왜 중요한지 직접 확인
 
 **실험:** `App.tsx`에서 `full_name`을 `fullName`으로 바꿔보세요.
 
@@ -549,9 +549,9 @@ Property 'fullName' does not exist on type 'Profile'.
 
 ---
 
-## 6. ④ 이력서답게 다듬기
+## 3-6. ④ 이력서답게 다듬기
 
-### 6.1 먼저 API 호출을 분리합니다
+### 3-6.1 먼저 API 호출을 분리합니다
 
 ```
 frontend/src/
@@ -567,7 +567,7 @@ frontend/src/
 
 덕분에 다음 단계(⑤)에서 호출 방식을 통째로 바꿔도 **화면 코드는 한 줄도 안 건드립니다.**
 
-### 6.2 한글에만 필요한 CSS 하나
+### 3-6.2 한글에만 필요한 CSS 하나
 
 ```css
 word-break: keep-all;
@@ -585,7 +585,7 @@ word-break: keep-all;
 
 한국어 웹 페이지를 만들 때 거의 항상 넣는 한 줄입니다.
 
-### 6.3 다크모드 — CSS 변수 + 미디어 쿼리
+### 3-6.3 다크모드 — CSS 변수 + 미디어 쿼리
 
 ```css
 :root {
@@ -603,7 +603,7 @@ word-break: keep-all;
 
 브라우저가 운영체제 설정을 알려주기 때문에, **자바스크립트 없이** 운영체제 테마를 따라갑니다.
 
-### 6.4 인쇄 CSS — 이력서니까 중요합니다
+### 3-6.4 인쇄 CSS — 이력서니까 중요합니다
 
 페이지에서 **Ctrl + P** 를 누르면 미리보기가 **흰 배경 + 검은 글씨**로 바뀝니다.
 
@@ -620,7 +620,7 @@ word-break: keep-all;
 
 화면용 색을 그대로 인쇄하면 잉크만 낭비되고 읽기도 나쁩니다. **"대상으로 저장 → PDF"** 를 고르면 이력서 PDF가 나옵니다.
 
-### 6.5 탭 제목을 이름으로
+### 3-6.5 탭 제목을 이름으로
 
 ```tsx
 useEffect(() => {
@@ -645,7 +645,7 @@ useEffect(() => {
 
 </details>
 
-### 6.6 화면의 세 가지 상태
+### 3-6.6 화면의 세 가지 상태
 
 ```
 data 없음 + error 없음  →  "불러오는 중..."
@@ -657,9 +657,9 @@ data 있음               →  이력서 내용
 
 ---
 
-## 7. ⑤ `openapi-fetch` — 마지막 구멍 메우기
+## 3-7. ⑤ `openapi-fetch` — 마지막 구멍 메우기
 
-### 7.1 지금 문제
+### 3-7.1 지금 문제
 
 `client.ts`에 두 개의 구멍이 있었습니다.
 
@@ -674,7 +674,7 @@ fetch('/api/profil')     // 오타 — 조용히 통과, 실행하면 404
 
 `as`는 "이 모양이라고 **쳐줘**"라는 선언일 뿐이라, 실제로 그런지 아무도 확인하지 않습니다.
 
-### 7.2 해결
+### 3-7.2 해결
 
 ```
 npm i openapi-fetch
@@ -705,7 +705,7 @@ npm i openapi-fetch
 
 **`App.tsx`는 한 줄도 안 바뀝니다.** 아까 호출을 분리해둔 보상입니다.
 
-### 7.3 확인 — 주소에 오타를 내보세요
+### 3-7.3 확인 — 주소에 오타를 내보세요
 
 ```ts
 const { data, error, response } = await client.GET('/api/profil')
@@ -720,7 +720,7 @@ Argument of type '"/api/profil"' is not assignable to parameter of type
 
 주소를 바꾸면 응답 타입도 자동으로 따라 바뀝니다. `client.GET('/api/health')`로 바꾸면 그 순간 `data`가 `{ database, postgres_version }`이 됩니다.
 
-### 7.4 없어진 것들
+### 3-7.4 없어진 것들
 
 | 사라진 것 | 이유 |
 |---|---|
@@ -730,7 +730,7 @@ Argument of type '"/api/profil"' is not assignable to parameter of type
 
 **손으로 타입을 적는 곳이 프론트엔드에 한 군데도 없습니다.**
 
-### 7.5 솔직하게 — 완전히 해결된 건 아닙니다
+### 3-7.5 솔직하게 — 완전히 해결된 건 아닙니다
 
 **여전히 런타임 검증은 없습니다.** 백엔드가 갑자기 다른 모양을 보내면 화면이 깨집니다.
 
@@ -740,7 +740,7 @@ Argument of type '"/api/profil"' is not assignable to parameter of type
 
 ---
 
-## 8. 코드 전체
+## 3-8. 코드 전체
 
 ### `backend/main.py` (DTO 부분)
 
@@ -777,7 +777,7 @@ def root():
 
 @app.get("/api/health", response_model=HealthResponse)
 def health():
-    with pool.connection() as conn:
+    with psycopg.connect(**CONN_INFO) as conn:
         with conn.cursor() as cur:
             cur.execute("select version()")
             version = cur.fetchone()[0]
@@ -787,7 +787,7 @@ def health():
 
 @app.get("/api/profile", response_model=ProfileResponse)
 def get_profile():
-    with pool.connection() as conn:
+    with psycopg.connect(**CONN_INFO) as conn:
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
                 """
@@ -912,7 +912,7 @@ export default App
 
 ---
 
-## 9. 이번에 배운 개념
+## 3-9. 이번에 배운 개념
 
 | 용어 | 한 줄 설명 |
 |---|---|
@@ -929,7 +929,7 @@ export default App
 
 ---
 
-## 10. 다음 단계 (Step 4)
+## 3-10. 다음 단계 (Step 4)
 
 > 🎯 **내가 로그인해서 이력서를 직접 수정합니다.**
 

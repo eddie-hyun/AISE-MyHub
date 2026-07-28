@@ -20,7 +20,7 @@
 
 ---
 
-## 1. 이 단계의 목표
+## 5-1. 이 단계의 목표
 
 > 🎯 **SQL 을 직접 쓰지 않고, 파이썬 클래스로 데이터베이스를 다루는 것.**
 > 그리고 **테이블을 서버가 알아서 만들게** 하는 것.
@@ -65,7 +65,7 @@
 
 ---
 
-## 2. ORM 이 뭐고, 왜 쓰나
+## 5-2. ORM 이 뭐고, 왜 쓰나
 
 **ORM** = Object-Relational Mapping. **파이썬 객체와 테이블의 행을 이어주는 것**입니다.
 
@@ -114,9 +114,9 @@ ORM 을 쓰면 **엔티티 한 곳만** 고칩니다.
 
 ---
 
-## 3. ① 설치 · 파일 분리 · 엔티티 정의
+## 5-3. ① 설치 · 파일 분리 · 엔티티 정의
 
-### 3.1 패키지
+### 5-3.1 패키지
 
 `backend/requirements.txt`
 
@@ -135,7 +135,7 @@ pip install -r requirements.txt
 
 > `psycopg` 는 계속 필요합니다. **SQLAlchemy 가 PostgreSQL 과 대화할 때 쓰는 드라이버**거든요. 커넥션 풀도 이제 필요 없이 저절로 생깁니다 — **엔진이 자체적으로 관리**하기 때문입니다. Step 4 까지는 요청마다 `psycopg.connect()` 로 새로 접속했는데, 그 연결-재사용 로직을 우리가 짤 필요가 없어진 셈입니다.
 
-### 3.2 `db.py` — 엔진과 세션
+### 5-3.2 `db.py` — 엔진과 세션
 
 ```python
 import os
@@ -218,7 +218,7 @@ print(profile.full_name)   # ← 여기서 SELECT 가 한 번 더 나감
 
 </details>
 
-### 3.3 `models.py` — 엔티티 (테이블의 모양)
+### 5-3.3 `models.py` — 엔티티 (테이블의 모양)
 
 ```python
 from datetime import datetime
@@ -254,7 +254,7 @@ class Profile(Base):
 
 `onupdate=func.now()` 하나만 새로 추가됐습니다. **이제 UPDATE 문에 `updated_at = now()` 를 적을 필요가 없습니다.**
 
-### 3.4 `schemas.py` — DTO (API 의 모양)
+### 5-3.4 `schemas.py` — DTO (API 의 모양)
 
 ```python
 from datetime import datetime
@@ -357,9 +357,9 @@ pip show sqlalchemy
 
 ---
 
-## 4. ② 테이블 자동 생성과 seed
+## 5-4. ② 테이블 자동 생성과 seed
 
-### 4.1 SQLAlchemy 가 이미 제공합니다
+### 5-4.1 SQLAlchemy 가 이미 제공합니다
 
 ```python
 Base.metadata.create_all(engine)
@@ -376,7 +376,7 @@ Base.metadata.create_all(engine)
 
 **"있는지 확인하고 없으면 생성"을 우리가 짤 필요가 없습니다.**
 
-### 4.2 `init_db.py` — 생성 · 잠금 · seed 을 한 파일에
+### 5-4.2 `init_db.py` — 생성 · 잠금 · seed 을 한 파일에
 
 ```python
 import argparse
@@ -443,7 +443,7 @@ if __name__ == "__main__":
 
 `inspect()` 는 **생성 여부를 판단하려는 게 아닙니다.** 그건 `create_all` 이 이미 합니다. "이번에 뭐가 새로 생겼는지"를 알아내서 **로그와 잠금 대상**으로 쓰려는 것입니다.
 
-### 4.3 보안 잠금이 자동화됐습니다
+### 5-4.3 보안 잠금이 자동화됐습니다
 
 Step 2 에서는 테이블을 만들 때마다 **손으로** 두 줄을 실행해야 했죠.
 
@@ -477,7 +477,7 @@ text("alter table :name enable ...")     # ❌ 이름은 불가능
 
 </details>
 
-### 4.4 초기 데이터 한 건
+### 5-4.4 초기 데이터 한 건
 
 `seed()` 는 **테이블에 행이 하나도 없을 때만** 실행됩니다.
 
@@ -488,7 +488,7 @@ if db.scalars(select(models.Profile)).first() is not None:
 
 `select(models.Profile)` 로 아무거나 한 줄만 찾아보고, 있으면 그냥 돌아갑니다. **여러 번 실행해도 두 번째부터는 아무 일도 안 일어납니다.**
 
-### 4.5 서버 시작 때 실행
+### 5-4.5 서버 시작 때 실행
 
 `backend/main.py`
 
@@ -507,7 +507,7 @@ app = FastAPI(lifespan=lifespan)
 
 **여러 번 실행해도 안전**하므로 매번 시작할 때 호출합니다.
 
-### 4.6 확인
+### 5-4.6 확인
 
 **테이블을 지워보고** 서버를 켜보세요.
 
@@ -523,7 +523,7 @@ INFO:     Application startup complete.
 
 두 번째 시작부터는 `[init]` 줄이 **안 나옵니다.** 이미 있으니 아무것도 안 하는 거예요.
 
-### 4.7 통째로 다시 만들기
+### 5-4.7 통째로 다시 만들기
 
 ```
 python init_db.py --reset
@@ -575,9 +575,9 @@ python init_db.py --reset
 
 ---
 
-## 5. ③ 엔드포인트를 ORM 으로
+## 5-5. ③ 엔드포인트를 ORM 으로
 
-### 5.1 수정 로직 — 이게 가장 극적으로 바뀝니다
+### 5-5.1 수정 로직 — 이게 가장 극적으로 바뀝니다
 
 ```diff
 -@app.put("/api/profile", response_model=ProfileResponse, dependencies=[Depends(require_admin)])
@@ -616,7 +616,7 @@ python init_db.py --reset
 +    return schemas.ProfileResponse(profile=schemas.Profile.model_validate(entity))
 ```
 
-### 5.2 조회
+### 5-5.2 조회
 
 ```python
 def load_profile(db: Session) -> models.Profile:
@@ -636,7 +636,7 @@ def load_profile(db: Session) -> models.Profile:
 
 `get_profile` 과 `update_profile` 이 이 함수 하나를 같이 씁니다 — 첫 줄을 찾는 로직이 두 곳에 흩어지지 않습니다.
 
-### 5.3 수정은 속성 대입으로
+### 5-5.3 수정은 속성 대입으로
 
 ```python
 entity.full_name = body.full_name
@@ -649,7 +649,7 @@ db.commit()
 
 > 이 추적을 **더티 트래킹(dirty tracking)** 이라고 합니다. 세션이 자기가 들고 있는 객체들의 원래 값을 기억하고 있다가, 달라진 것만 찾아냅니다.
 
-### 5.4 `updated_at` 이 코드에서 사라졌습니다
+### 5-5.4 `updated_at` 이 코드에서 사라졌습니다
 
 이전 UPDATE 문에는 `updated_at = now()` 가 손으로 적혀 있었습니다. 지금은 없습니다 — `models.py` 에 선언해뒀으니까요.
 
@@ -659,7 +659,7 @@ updated_at: Mapped[datetime] = mapped_column(..., onupdate=func.now())
 
 **컬럼이 늘어나도 UPDATE 문을 고칠 일이 없다**는 게 ORM 의 실질적 이득입니다.
 
-### 5.5 `db.refresh()` — 대가를 정직하게
+### 5-5.5 `db.refresh()` — 대가를 정직하게
 
 ```python
 db.commit()
@@ -676,7 +676,7 @@ Step 4 에서 `RETURNING` 으로 한 번에 끝냈던 걸 세 번에 나눠 합�
 
 **이 앱 규모에서는 전혀 문제가 안 되지만**, ORM 이 공짜가 아니라는 건 알고 계시는 게 좋습니다. 정말 성능이 중요한 지점에서는 ORM 을 우회해 최적화된 쿼리를 쓰면 됩니다.
 
-### 5.6 `text()` — ORM 을 써도 raw SQL 은 쓸 수 있습니다
+### 5-5.6 `text()` — ORM 을 써도 raw SQL 은 쓸 수 있습니다
 
 ```python
 @app.get("/api/health", response_model=schemas.HealthResponse)
@@ -689,7 +689,7 @@ def health(db: Session = Depends(get_db)):
 
 **대부분은 ORM 으로, 안 맞는 것만 `text()` 로** — 이게 현실적인 사용법입니다. ORM 을 도입한다고 SQL 을 못 쓰게 되는 게 아닙니다.
 
-### 5.7 세션의 수명
+### 5-5.7 세션의 수명
 
 ```python
 def get_db() -> Iterator[Session]:
@@ -706,7 +706,7 @@ def get_profile(db: Session = Depends(get_db)):
 
 Step 4 까지는 요청마다 `psycopg.connect()` 로 새로 접속했습니다. 이제는 **SQLAlchemy 엔진이 자체 커넥션 풀을 갖고 있어서** 세션 뒤에서 연결을 재사용합니다 — 우리가 직접 짜지 않아도 따라온 부수 효과입니다.
 
-### 5.8 SQL 인젝션 걱정이 사라졌습니다
+### 5-5.8 SQL 인젝션 걱정이 사라졌습니다
 
 Step 4 에서 `%(name)s` 자리 표시를 꼼꼼히 썼던 이유가 SQL 인젝션 방어였죠.
 
@@ -742,280 +742,9 @@ DB_HOST / DB_PORT / DB_NAME / DB_USER / DB_PASSWORD
 
 ---
 
-## 6. 코드 전체
+## 5-6. ④ 정리
 
-### `backend/db.py`
-
-```python
-import os
-from collections.abc import Iterator
-
-from dotenv import load_dotenv
-from sqlalchemy import URL, create_engine
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
-
-load_dotenv()
-
-DATABASE_URL = URL.create(
-    "postgresql+psycopg",
-    username=os.getenv("DB_USER", "postgres"),
-    password=os.getenv("DB_PASSWORD"),
-    host=os.getenv("DB_HOST"),
-    port=int(os.getenv("DB_PORT", "5432")),
-    database=os.getenv("DB_NAME", "postgres"),
-)
-
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, echo=False)
-
-SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
-
-
-class Base(DeclarativeBase):
-    """이 클래스를 상속하면 SQLAlchemy 가 '이건 테이블이다'라고 인식한다."""
-
-
-def get_db() -> Iterator[Session]:
-    with SessionLocal() as session:
-        yield session
-```
-
-### `backend/models.py`
-
-```python
-from datetime import datetime
-
-from sqlalchemy import BigInteger, DateTime, Identity, Text, func
-from sqlalchemy.orm import Mapped, mapped_column
-
-from db import Base
-
-
-class Profile(Base):
-    __tablename__ = "profile"
-
-    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
-    full_name: Mapped[str] = mapped_column(Text, nullable=False)
-    headline: Mapped[str] = mapped_column(Text, nullable=False)
-    summary: Mapped[str | None] = mapped_column(Text, nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        server_default=func.now(),
-        onupdate=func.now(),
-    )
-```
-
-### `backend/schemas.py`
-
-```python
-from datetime import datetime
-
-from pydantic import BaseModel, ConfigDict, Field
-
-
-class HealthResponse(BaseModel):
-    status: str
-    database: str
-    version: str
-
-
-class Profile(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
-
-    full_name: str
-    headline: str
-    summary: str | None
-    updated_at: datetime
-
-
-class ProfileResponse(BaseModel):
-    profile: Profile
-
-
-class ProfileUpdate(BaseModel):
-    full_name: str = Field(min_length=1, max_length=100)
-    headline: str = Field(min_length=1, max_length=200)
-    summary: str | None = Field(default=None, max_length=2000)
-
-
-class LoginRequest(BaseModel):
-    passcode: str
-
-
-class SessionResponse(BaseModel):
-    authenticated: bool
-```
-
-### `backend/init_db.py`
-
-```python
-import argparse
-
-from sqlalchemy import inspect, select, text
-
-import models
-from db import Base, SessionLocal, engine
-
-
-def create_tables() -> list[str]:
-    """새로 만들어진 테이블 이름 목록을 돌려준다."""
-    before = set(inspect(engine).get_table_names(schema="public"))
-    Base.metadata.create_all(engine)  # checkfirst=True 가 기본값이라 없는 테이블만 만든다.
-    after = set(inspect(engine).get_table_names(schema="public"))
-    return sorted(after - before)
-
-
-def lock_down(table_names: list[str]) -> None:
-    with engine.begin() as conn:
-        for name in table_names:
-            conn.execute(text(f'alter table public."{name}" enable row level security'))
-            conn.execute(text(f'revoke all on table public."{name}" from anon, authenticated'))
-
-
-def seed() -> None:
-    with SessionLocal() as db:
-        if db.scalars(select(models.Profile)).first() is not None:
-            return
-        db.add(
-            models.Profile(
-                full_name="백영민",
-                headline="백엔드 개발자",
-                summary="온라인 이력서를 직접 만들고 있습니다.",
-            )
-        )
-        db.commit()
-        print("[init] 초기 데이터 1건 입력")
-
-
-def init_database() -> None:
-    new_tables = create_tables()
-    if new_tables:
-        lock_down(new_tables)
-        print(f"[init] 테이블 생성 + 잠금: {', '.join(new_tables)}")
-    seed()
-
-
-def reset() -> None:
-    Base.metadata.drop_all(engine)
-    init_database()
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--reset", action="store_true", help="기존 테이블을 지우고 다시 만든다.")
-    args = parser.parse_args()
-
-    if args.reset:
-        reset()
-    else:
-        init_database()
-```
-
-### `backend/main.py`
-
-```python
-import os
-import secrets
-from contextlib import asynccontextmanager
-
-from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Request
-from sqlalchemy import select, text
-from sqlalchemy.orm import Session
-from starlette.middleware.sessions import SessionMiddleware
-
-import models
-import schemas
-from db import engine, get_db
-from init_db import init_database
-
-load_dotenv()
-
-ADMIN_PASSCODE = os.environ["ADMIN_PASSCODE"]
-SESSION_SECRET = os.environ["SESSION_SECRET"]
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # 엔티티 기준으로 테이블이 있는지 확인하고, 없으면 만든다.
-    # 비어 있으면 화면에 보여줄 한 건을 넣는다.
-    init_database()
-    yield
-    engine.dispose()
-
-
-app = FastAPI(lifespan=lifespan)
-app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET, session_cookie="myhub_session")
-
-
-def require_admin(request: Request) -> None:
-    if not request.session.get("admin"):
-        raise HTTPException(status_code=401, detail="로그인이 필요합니다.")
-
-
-def load_profile(db: Session) -> models.Profile:
-    profile = db.scalars(select(models.Profile).order_by(models.Profile.id).limit(1)).first()
-
-    if profile is None:
-        raise HTTPException(status_code=404, detail="프로필이 아직 없습니다.")
-
-    return profile
-
-
-@app.get("/api/health", response_model=schemas.HealthResponse)
-def health(db: Session = Depends(get_db)):
-    try:
-        version = db.scalar(text("select version()"))
-        return schemas.HealthResponse(status="ok", database="connected", version=version)
-    except Exception as e:
-        raise HTTPException(status_code=503, detail={"status": "error", "database": "disconnected", "error": str(e)})
-
-
-@app.get("/api/profile", response_model=schemas.ProfileResponse)
-def get_profile(db: Session = Depends(get_db)):
-    entity = load_profile(db)
-    return schemas.ProfileResponse(profile=schemas.Profile.model_validate(entity))
-
-
-@app.put("/api/profile", response_model=schemas.ProfileResponse, dependencies=[Depends(require_admin)])
-def update_profile(body: schemas.ProfileUpdate, db: Session = Depends(get_db)):
-    entity = load_profile(db)
-
-    entity.full_name = body.full_name
-    entity.headline = body.headline
-    entity.summary = body.summary
-
-    db.commit()
-    db.refresh(entity)
-
-    return schemas.ProfileResponse(profile=schemas.Profile.model_validate(entity))
-
-
-@app.post("/api/auth/session", response_model=schemas.SessionResponse)
-def login(body: schemas.LoginRequest, request: Request):
-    if not secrets.compare_digest(body.passcode.encode("utf-8"), ADMIN_PASSCODE.encode("utf-8")):
-        raise HTTPException(status_code=401, detail="비밀코드가 올바르지 않습니다.")
-
-    request.session["admin"] = True
-    return schemas.SessionResponse(authenticated=True)
-
-
-@app.get("/api/auth/session", response_model=schemas.SessionResponse)
-def check_session(request: Request):
-    return schemas.SessionResponse(authenticated=bool(request.session.get("admin")))
-
-
-@app.delete("/api/auth/session", response_model=schemas.SessionResponse)
-def logout(request: Request):
-    request.session.clear()
-    return schemas.SessionResponse(authenticated=False)
-```
-
----
-
-## 7. ④ 정리
-
-### 7.1 최종 구조
+### 5-6.1 최종 구조
 
 ```
 backend/
@@ -1029,7 +758,7 @@ backend/
 
 **Step 4 까지는 `main.py` 하나에 전부 있었습니다.** ORM 을 넣으면서 자연스럽게 나뉜 거예요 — 미리 나눈 게 아니라, **나눌 이유가 생겨서** 나눴습니다.
 
-### 7.2 프론트엔드는 손대지 않았습니다
+### 5-6.2 프론트엔드는 손대지 않았습니다
 
 API 의 주소도 응답 모양도 그대로라 **`npm run gen:api` 조차 필요 없습니다.**
 
@@ -1037,7 +766,7 @@ API 의 주소도 응답 모양도 그대로라 **`npm run gen:api` 조차 필�
 
 ---
 
-## 8. 이번에 배운 개념
+## 5-7. 이번에 배운 개념
 
 | 용어 | 한 줄 설명 |
 |---|---|
@@ -1058,7 +787,7 @@ API 의 주소도 응답 모양도 그대로라 **`npm run gen:api` 조차 필�
 
 ---
 
-## 9. 여기까지의 여정
+## 5-8. 여기까지의 여정
 
 ```
 Step 1   브라우저 → FastAPI → Supabase            데이터를 쌓을 곳을 마련했다

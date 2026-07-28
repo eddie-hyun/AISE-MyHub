@@ -242,13 +242,12 @@
   <ol>
     <li><a href="#s1">이 단계의 목표</a></li>
     <li><a href="#s2">완성된 모습</a></li>
-    <li><a href="#s3">① 테이블 만들기</a></li>
-    <li><a href="#s4">② 바깥에서 못 보게 잠그기</a></li>
-    <li><a href="#s5">③ <code>/profile</code> 주소 만들기</a></li>
-    <li><a href="#s6">④ 커넥션 풀</a></li>
-    <li><a href="#s7">코드 전체</a></li>
-    <li><a href="#s8">개념 정리</a></li>
-    <li><a href="#s9">다음 단계</a></li>
+    <li><a href="#s3">① <code>/profile</code> 주소 만들기</a></li>
+    <li><a href="#s4">② 테이블 만들기</a></li>
+    <li><a href="#s5">③ 바깥에서 못 보게 잠그기</a></li>
+    <li><a href="#s6">코드 전체</a></li>
+    <li><a href="#s7">개념 정리</a></li>
+    <li><a href="#s8">다음 단계</a></li>
   </ol>
 </nav>
 
@@ -257,11 +256,10 @@
   <p>명령어 블록마다 <strong>cmd / PowerShell / macOS·Linux</strong> 탭이 있습니다. 하나를 고르면 문서 전체가 그 터미널 기준으로 바뀝니다.</p>
   <p>코드 블록에 마우스를 올리면 오른쪽 위에 <strong>복사</strong> 버튼이 나타납니다.</p>
   <p><span style="color:var(--accent);font-weight:700">?</span> 초록 패널은 <strong>"이게 뭔가요?"에 대한 답</strong>, <span style="color:var(--danger);font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.14em">TROUBLESHOOTING</span> 붉은 패널은 <strong>에러가 났을 때</strong> 보는 곳입니다.</p>
-  <p>코드가 바뀌는 부분은 <span style="color:var(--danger)"><code>-</code> 붉은 줄</span>(지운 것)과 <span style="color:var(--accent)"><code>+</code> 초록 줄</span>(추가한 것)로 표시합니다. 이 블록만 복사 버튼이 없습니다 — 최종 코드는 <a href="#s7">7. 코드 전체</a>에서 통째로 복사하세요.</p>
   <p>이전 문서: <a href="step1_backend_supabase.html">Step 1 — 파이썬 백엔드와 Supabase 연결하기</a></p>
 </div>
 
-<h2 id="s1">1. 이 단계의 목표</h2>
+<h2 id="s1">2-1. 이 단계의 목표</h2>
 
 <div class="box ok">
   <p class="t">🎯 목표</p>
@@ -274,12 +272,12 @@
 
 <div class="tw"><table>
 <tbody>
-<tr><td>✅ <strong>만드는 것</strong></td><td><code>profile</code> 테이블, <code>GET /profile</code> 주소, 커넥션 풀</td></tr>
+<tr><td>✅ <strong>만드는 것</strong></td><td><code>GET /profile</code> 주소, <code>profile</code> 테이블</td></tr>
 <tr><td>❌ <strong>아직 없는 것</strong></td><td>화면(HTML), 수정 기능, 로그인, 나머지 이력서 항목들</td></tr>
 </tbody>
 </table></div>
 
-<h2 id="s2">2. 완성된 모습</h2>
+<h2 id="s2">2-2. 완성된 모습</h2>
 <p>브라우저에서 <code>http://127.0.0.1:8080/profile</code> 에 들어가면:</p>
 <pre><code>{
   "profile": {
@@ -292,7 +290,110 @@
 }</code></pre>
 <p>글자는 아직 투박하지만, <strong>내가 DB에 넣은 값이 인터넷 주소를 통해 나왔다</strong>는 게 핵심입니다. Step 3에서 이걸 예쁘게 그리기만 하면 됩니다.</p>
 
-<h2 id="s3">3. ① 테이블 만들기</h2>
+<h2 id="s3">2-3. ① <code>/profile</code> 주소 만들기</h2>
+
+<p>이 엔드포인트는 손으로 짠 게 아니라, <strong>AI 코딩 에이전트(Claude Code)에게 아래 프롬프트를 그대로 줘서</strong> 만들었습니다.</p>
+
+<pre><code>DB에 저장된 사용자 정보를 돌려주는 엔드포인트를 추가:
+
+GET /profile
+
+응답에는 이름, 한 줄 소개, 상세 소개, 마지막 업데이트 시각이 포함되어야 함.
+
+sql query를 직접 쓰는 간단한 방식으로 구현.</code></pre>
+
+<div class="box">
+  <p class="t">📌 AI가 만든 초안을 그대로 쓰지는 않았습니다</p>
+  <p>2-4장의 SQL과 같은 이유입니다 — 어떤 컬럼을 어떤 방식으로 읽어올지는 프롬프트가 정해준 게 아니라 <strong>AI가 그때그때 고른 것</strong>이라, 같은 프롬프트를 다시 줘도 다른 모양이 나올 수 있습니다.</p>
+</div>
+
+<p><code>backend/main.py</code>에 추가한 부분입니다.</p>
+
+<pre data-file="backend/main.py"><code>@app.get("/profile")
+def get_profile():
+    with psycopg.connect(**CONN_INFO) as conn:
+        <span class="c"># dict_row: 결과를 튜플이 아니라 {컬럼명: 값} 형태로 받는다.</span>
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                select id, full_name, headline, summary, updated_at
+                from public.profile
+                order by id
+                limit 1
+                """
+            )
+            row = cur.fetchone()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="프로필이 아직 없습니다.")
+
+    <span class="c"># 최상위는 항상 이름 있는 오브젝트로 감싼다.</span>
+    return {"profile": row}</code></pre>
+
+<h3>핵심 4가지</h3>
+
+<details class="q">
+<summary><span class="q-ic">?</span><code>row_factory=dict_row</code> 는 왜 붙이나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>이게 없으면 DB 결과가 <strong>튜플</strong>로 옵니다.</p>
+<pre><code>(1, '백영민', '백엔드 개발자', '...', datetime(...))
+<span class="c"># row[1]이 이름... 순서를 외워야 함</span></code></pre>
+<p>붙이면 <strong>딕셔너리</strong>로 옵니다.</p>
+<pre><code>{'id': 1, 'full_name': '백영민', 'headline': '백엔드 개발자', ...}
+<span class="c"># row['full_name'] — 순서를 몰라도 됨</span></code></pre>
+<p>게다가 딕셔너리는 FastAPI가 그대로 JSON으로 바꿔주기 때문에 <strong>변환 코드를 한 줄도 안 써도 됩니다.</strong></p>
+</div>
+</details>
+
+<details class="q">
+<summary><span class="q-ic">?</span><code>order by id limit 1</code> 은 왜 필요한가요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>프로필은 한 줄만 있으면 되니 <strong>첫 줄 하나만</strong> 가져옵니다.</p>
+<p><code>order by</code>를 빼면 <strong>어떤 줄이 나올지 보장되지 않습니다.</strong> 데이터베이스는 "순서를 지정하지 않으면 아무 순서로나 줘도 된다"는 규칙이라, 지금은 한 줄뿐이라 문제없어 보여도 나중에 줄이 늘면 예측 불가능해집니다.</p>
+</div>
+</details>
+
+<details class="q">
+<summary><span class="q-ic">?</span>왜 <code>404</code> 를 따로 내보내나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>테이블이 비어 있으면 <code>row</code>가 <code>None</code>이 됩니다. 그냥 두면 <code>{"profile": null}</code> 같은 애매한 응답이 나갑니다.</p>
+<p>그러면 나중에 화면 쪽에서 <strong>"데이터가 없는 건지, 서버가 이상한 건지" 구분이 안 됩니다.</strong> 404는 "그런 건 없다"는 명확한 신호입니다.</p>
+</div>
+</details>
+
+<details class="q">
+<summary><span class="q-ic">?</span>왜 <code>{"profile": row}</code> 로 한 겹 감싸나요<span class="q-ch">▾</span></summary>
+<div class="q-body">
+<p>나중에 이력서 전체를 내려줄 때 이런 모양이 됩니다.</p>
+<pre><code>{ "profile": {...}, "experiences": [...], "projects": [...] }</code></pre>
+<p>지금부터 감싸두면 <strong>그때 응답 형태를 안 바꿔도 됩니다.</strong> 안 감쌌으면 화면 코드를 전부 고쳐야 하고요.</p>
+<p>최상위에 배열이나 값을 그대로 두지 않고 <strong>항상 이름 있는 오브젝트로 감싸는 것</strong>이 이 프로젝트의 규칙입니다.</p>
+</div>
+</details>
+
+<div class="box warn">
+  <p class="t">⚠️ 아직 이 코드를 실행해도 에러가 납니다</p>
+  <p><code>select</code>가 읽으려는 <code>public.profile</code> 테이블이 아직 없기 때문입니다. 이 코드가 <strong>어떤 컬럼을 기대하는지</strong>(<code>full_name</code>, <code>headline</code>, <code>summary</code>, <code>updated_at</code>)는 이미 정해졌으니, 다음 절에서는 그 모양에 맞춰 테이블을 만듭니다.</p>
+</div>
+
+<details class="tb">
+<summary>
+  <span class="tb-lab">TROUBLESHOOTING</span>
+  <span class="tb-tit"><code>404 프로필이 아직 없습니다</code></span>
+</summary>
+<div class="tb-body">
+<h4>원인</h4>
+<p>테이블은 만들어졌는데 <strong>데이터가 한 줄도 없습니다.</strong> <code>insert</code> 문을 빼먹었거나 실행이 안 된 경우입니다.</p>
+<h4>해결 — SQL Editor에서 확인</h4>
+<pre data-file="Supabase → SQL Editor"><code>select * from public.profile;</code></pre>
+<p><code>no rows</code>가 나오면 다시 넣으세요.</p>
+<pre data-file="Supabase → SQL Editor"><code>insert into public.profile (full_name, headline, summary)
+values ('내이름', '내 한 줄 소개', '조금 더 긴 소개글');</code></pre>
+<div class="box ok"><p class="t">✅ 이건 코드가 잘 동작한다는 증거입니다</p><p>404가 나왔다는 건 서버가 DB까지 잘 다녀왔다는 뜻입니다. 진짜로 데이터가 없었을 뿐이에요.</p></div>
+</div>
+</details>
+
+<h2 id="s4">2-4. ② 테이블 만들기</h2>
 
 <h3>SQL Editor 열기</h3>
 <p>Supabase 대시보드 <strong>왼쪽 사이드바</strong>에서 찾습니다.</p>
@@ -306,6 +407,13 @@
 <p><strong>SQL Editor</strong> 클릭 → 입력창이 안 보이면 좌측 상단 <strong><code>+ New query</code></strong>.</p>
 
 <h3>실행할 SQL</h3>
+
+<div class="box warn">
+  <p class="t">⚠️ 이 SQL은 고정된 정답이 아니라 예시입니다</p>
+  <p>위에서 만든 엔드포인트가 요구하는 건 "이름 · 한 줄 소개 · 상세 소개 · 마지막 업데이트 시각을 담을 테이블"이라는 <strong>내용</strong>뿐입니다. <code>full_name</code> / <code>headline</code> / <code>summary</code> / <code>updated_at</code>이라는 <strong>컬럼 이름과 타입은 AI가 고른 것</strong>이라, 다른 AI에게 같은 요구를 하거나 같은 AI에게 다시 물어봐도 <code>name</code> / <code>tagline</code> / <code>bio</code> / <code>modified_at</code>처럼 다르게 나올 수 있습니다.</p>
+  <p>지금 아래 SQL은 <strong>바로 위 코드가 실제로 사용 중인 모양</strong>이고, <code>backend/main.py</code>의 쿼리와 1:1로 맞춰져 있습니다.</p>
+</div>
+
 <pre data-file="Supabase → SQL Editor"><code>create table public.profile (
   id         bigint generated always as identity primary key,
   full_name  text        not null,
@@ -322,6 +430,14 @@ values (
 );</code></pre>
 
 <p>붙여넣고 <strong><code>Run</code></strong> 버튼 또는 <strong>Ctrl + Enter</strong>.</p>
+
+<div class="box">
+  <p class="t">💡 코드가 먼저, SQL은 그 다음입니다</p>
+  <p>앞 절에서 만든 엔드포인트가 이미 어떤 컬럼을 기대하는지 정해놨습니다. 그 모양을 SQL로 손수 옮겨 적는 대신, <strong>AI에게 코드를 보여주고 맞춰달라고 하는 편이 더 안전합니다.</strong></p>
+  <pre><code>backend/main.py 의 현재 구현(쿼리, DTO)을 보고,
+거기서 요구하는 컬럼 구성에 맞는 public.profile 테이블 생성 SQL을 만들어줘.</code></pre>
+  <p><strong>코드가 진실(source of truth)이고, SQL은 그걸 따라가는 쪽</strong>이어야 나중에 "테이블은 이렇게 만들었는데 코드는 다른 컬럼을 찾는다"는 불일치가 생기지 않습니다.</p>
+</div>
 
 <div class="box">
   <p class="t">💡 <code>Success. No rows returned</code> 이 정상입니다</p>
@@ -351,7 +467,13 @@ values (
 </tbody>
 </table></div>
 
-<h2 id="s4">4. ② 바깥에서 못 보게 잠그기</h2>
+<div class="box">
+  <p class="t">🎁 보너스 — 자동 생성된 API 문서</p>
+  <p>이제 코드와 테이블이 모두 준비됐으니 <strong><code>http://127.0.0.1:8080/docs</code></strong> 를 열어보세요.</p>
+  <p>만든 주소 3개(<code>/</code>, <code>/health</code>, <code>/profile</code>)가 목록으로 나오고 <strong><code>Try it out</code> 버튼으로 브라우저에서 바로 실행</strong>해볼 수 있습니다. 따로 만든 게 아니라 FastAPI가 코드를 읽고 자동 생성한 것입니다.</p>
+</div>
+
+<h2 id="s5">2-5. ③ 바깥에서 못 보게 잠그기</h2>
 
 <p>테이블을 만든 직후에 <strong>두 줄을 항상 같이 실행</strong>하세요.</p>
 
@@ -434,284 +556,14 @@ authenticated  | TRUNCATE
 </div>
 </details>
 
-<h2 id="s5">5. ③ <code>/profile</code> 주소 만들기</h2>
-
-<p><code>backend/main.py</code>에 추가한 부분입니다.</p>
-
-<pre data-file="backend/main.py"><code>@app.get("/profile")
-def get_profile():
-    with pool.connection() as conn:
-        <span class="c"># dict_row: 결과를 튜플이 아니라 {컬럼명: 값} 형태로 받는다.</span>
-        with conn.cursor(row_factory=dict_row) as cur:
-            cur.execute(
-                """
-                select id, full_name, headline, summary, updated_at
-                from public.profile
-                order by id
-                limit 1
-                """
-            )
-            row = cur.fetchone()
-
-    if row is None:
-        raise HTTPException(status_code=404, detail="프로필이 아직 없습니다.")
-
-    <span class="c"># 최상위는 항상 이름 있는 오브젝트로 감싼다.</span>
-    return {"profile": row}</code></pre>
-
-<h3>핵심 4가지</h3>
-
-<details class="q">
-<summary><span class="q-ic">?</span><code>row_factory=dict_row</code> 는 왜 붙이나요<span class="q-ch">▾</span></summary>
-<div class="q-body">
-<p>이게 없으면 DB 결과가 <strong>튜플</strong>로 옵니다.</p>
-<pre><code>(1, '백영민', '백엔드 개발자', '...', datetime(...))
-<span class="c"># row[1]이 이름... 순서를 외워야 함</span></code></pre>
-<p>붙이면 <strong>딕셔너리</strong>로 옵니다.</p>
-<pre><code>{'id': 1, 'full_name': '백영민', 'headline': '백엔드 개발자', ...}
-<span class="c"># row['full_name'] — 순서를 몰라도 됨</span></code></pre>
-<p>게다가 딕셔너리는 FastAPI가 그대로 JSON으로 바꿔주기 때문에 <strong>변환 코드를 한 줄도 안 써도 됩니다.</strong></p>
-</div>
-</details>
-
-<details class="q">
-<summary><span class="q-ic">?</span><code>order by id limit 1</code> 은 왜 필요한가요<span class="q-ch">▾</span></summary>
-<div class="q-body">
-<p>프로필은 한 줄만 있으면 되니 <strong>첫 줄 하나만</strong> 가져옵니다.</p>
-<p><code>order by</code>를 빼면 <strong>어떤 줄이 나올지 보장되지 않습니다.</strong> 데이터베이스는 "순서를 지정하지 않으면 아무 순서로나 줘도 된다"는 규칙이라, 지금은 한 줄뿐이라 문제없어 보여도 나중에 줄이 늘면 예측 불가능해집니다.</p>
-</div>
-</details>
-
-<details class="q">
-<summary><span class="q-ic">?</span>왜 <code>404</code> 를 따로 내보내나요<span class="q-ch">▾</span></summary>
-<div class="q-body">
-<p>테이블이 비어 있으면 <code>row</code>가 <code>None</code>이 됩니다. 그냥 두면 <code>{"profile": null}</code> 같은 애매한 응답이 나갑니다.</p>
-<p>그러면 나중에 화면 쪽에서 <strong>"데이터가 없는 건지, 서버가 이상한 건지" 구분이 안 됩니다.</strong> 404는 "그런 건 없다"는 명확한 신호입니다.</p>
-</div>
-</details>
-
-<details class="q">
-<summary><span class="q-ic">?</span>왜 <code>{"profile": row}</code> 로 한 겹 감싸나요<span class="q-ch">▾</span></summary>
-<div class="q-body">
-<p>나중에 이력서 전체를 내려줄 때 이런 모양이 됩니다.</p>
-<pre><code>{ "profile": {...}, "experiences": [...], "projects": [...] }</code></pre>
-<p>지금부터 감싸두면 <strong>그때 응답 형태를 안 바꿔도 됩니다.</strong> 안 감쌌으면 화면 코드를 전부 고쳐야 하고요.</p>
-<p>최상위에 배열이나 값을 그대로 두지 않고 <strong>항상 이름 있는 오브젝트로 감싸는 것</strong>이 이 프로젝트의 규칙입니다.</p>
-</div>
-</details>
-
-<div class="box">
-  <p class="t">🎁 보너스 — 자동 생성된 API 문서</p>
-  <p><strong><code>http://127.0.0.1:8080/docs</code></strong> 를 열어보세요.</p>
-  <p>만든 주소 3개(<code>/</code>, <code>/health</code>, <code>/profile</code>)가 목록으로 나오고 <strong><code>Try it out</code> 버튼으로 브라우저에서 바로 실행</strong>해볼 수 있습니다. 따로 만든 게 아니라 FastAPI가 코드를 읽고 자동 생성한 것입니다.</p>
-</div>
-
-<h2 id="s6">6. ④ 커넥션 풀 — 연결을 재사용하기</h2>
-
-<h3>왜 필요한가</h3>
-<p>풀이 없으면 요청이 올 때마다 <strong>매번 처음부터</strong> 이 과정을 다 합니다.</p>
-<pre><code>TCP 연결 → TLS 암호화 협상 → 로그인 인증 → 쿼리 실행 → 연결 종료
-└────────── 여기까지 0.2~0.4초 ──────────┘   └ 0.01초 ┘</code></pre>
-<p>정작 하려던 쿼리는 눈 깜짝할 새인데 <strong>연결하고 끊는 데 대부분의 시간</strong>을 씁니다. 서버가 도쿄에 있으니 왕복 시간도 붙고요.</p>
-<p><strong>커넥션 풀</strong>은 연결 몇 개를 미리 열어두고 <strong>빌려주고 반납받는</strong> 방식입니다.</p>
-
-<div class="box">
-  <p class="t">💡 지금은 체감이 안 될 수도 있습니다</p>
-  <p>혼자서 가끔 새로고침하는 정도면 차이를 느끼기 어렵습니다. 진짜 효과는 <strong>한 화면이 여러 요청을 동시에 던질 때</strong>(Step 3부터 그렇게 됩니다)와 <strong>방문자가 여럿일 때</strong> 납니다. 미리 깔아두는 기반이라고 보시면 됩니다.</p>
-</div>
-
-<h3>패키지 추가</h3>
-<p><code>requirements.txt</code>의 <code>psycopg</code> 줄을 이렇게 바꿉니다.</p>
-<pre data-file="backend/requirements.txt"><code>psycopg[binary,pool]</code></pre>
-
-<p>그리고 <strong>서버를 끄고</strong>(Ctrl+C) 다시 설치합니다.</p>
-<div class="cmd">
-  <div class="tabs">
-    <button class="tab" data-shell="cmd">cmd</button>
-    <button class="tab" data-shell="ps">PowerShell</button>
-    <button class="tab" data-shell="sh">macOS / Linux</button>
-  </div>
-  <pre data-shell="cmd"><code>pip install -r requirements.txt
-uvicorn main:app --reload --port 8080</code></pre>
-  <pre data-shell="ps"><code>pip install -r requirements.txt
-uvicorn main:app --reload --port 8080</code></pre>
-  <pre data-shell="sh"><code>pip install -r requirements.txt
-uvicorn main:app --reload --port 8080</code></pre>
-</div>
-
-<div class="box warn">
-  <p class="t">⚠️ 프롬프트에 <code>(.venv)</code> 가 있는지 먼저 확인하세요</p>
-  <p>없으면 <strong>컴퓨터 전체 파이썬에 설치되어</strong> 다음 단계에서 에러가 납니다. 아래 트러블슈팅 참고.</p>
-</div>
-
-<h3>바뀐 코드 3곳</h3>
-
-<p>먼저 전체 변경사항을 한눈에 봅시다. <span style="color:var(--danger)">붉은 줄(<code>-</code>)</span>이 지운 것, <span style="color:var(--accent)">초록 줄(<code>+</code>)</span>이 추가한 것입니다.</p>
-
-<pre class="diff" data-file="backend/main.py"><code> import os
-+from contextlib import asynccontextmanager
- from pathlib import Path
-
--import psycopg
- from dotenv import load_dotenv
- from fastapi import FastAPI, HTTPException
- from psycopg.rows import dict_row
-+from psycopg_pool import ConnectionPool
-
- CONN_INFO = { ... }
-
-+pool = ConnectionPool(kwargs=CONN_INFO, min_size=1, max_size=5, open=False)
-+
-+
-+@asynccontextmanager
-+async def lifespan(app: FastAPI):
-+    pool.open(wait=True, timeout=10)
-+    yield
-+    pool.close()
-+
-+
--app = FastAPI(title="MyHub")
-+app = FastAPI(title="MyHub", lifespan=lifespan)
-
-
- @app.get("/health")
- def health():
--    with psycopg.connect(**CONN_INFO) as conn:
-+    with pool.connection() as conn:
-         ...
-
-
- @app.get("/profile")
- def get_profile():
--    with psycopg.connect(**CONN_INFO) as conn:
-+    with pool.connection() as conn:
-         ...</code></pre>
-
-<h4>① 풀 만들기</h4>
-<pre data-file="backend/main.py"><code>pool = ConnectionPool(kwargs=CONN_INFO, min_size=1, max_size=5, open=False)</code></pre>
-<div class="tw"><table>
-<tbody>
-<tr><td><code>kwargs=CONN_INFO</code></td><td>접속 정보는 그대로 재사용</td></tr>
-<tr><td><code>min_size=1</code></td><td>최소 1개는 항상 열어둔다</td></tr>
-<tr><td><code>max_size=5</code></td><td>바빠도 5개까지만. 무한정 늘어나서 DB를 괴롭히지 않도록</td></tr>
-<tr><td><code>open=False</code></td><td><strong>여기서는 아직 열지 않는다</strong> (다음 항목에서 엽니다)</td></tr>
-</tbody>
-</table></div>
-
-<h4>② <code>lifespan</code> — 서버의 시작과 끝</h4>
-<pre data-file="backend/main.py"><code>@asynccontextmanager
-async def lifespan(app: FastAPI):
-    pool.open(wait=True, timeout=10)   <span class="c"># 서버 켜질 때</span>
-    yield                              <span class="c"># ← 이 지점에서 서버가 돌아감</span>
-    pool.close()                       <span class="c"># 서버 꺼질 때</span>
-
-app = FastAPI(title="MyHub", lifespan=lifespan)</code></pre>
-<p><code>yield</code> <strong>위쪽은 시작할 때 한 번</strong>, <strong>아래쪽은 끝날 때 한 번</strong> 실행됩니다. 그 사이가 서버가 살아 있는 시간입니다.</p>
-<p>풀을 파일 맨 위에서 바로 열면 서버가 준비되기도 전에 DB에 붙으려 해서 타이밍이 꼬입니다. <strong>"서버가 준비됐을 때 열고, 끝날 때 닫는다"</strong>가 올바른 순서입니다.</p>
-<p><code>wait=True</code>를 준 이유는 <strong>연결 실패를 시작할 때 바로 알기 위해서</strong>입니다. 없으면 서버는 멀쩡히 켜졌다가 첫 요청에서야 에러가 나서 원인 찾기가 헷갈립니다.</p>
-
-<h4>③ 연결을 빌려 쓰기</h4>
-<pre class="diff" data-file="backend/main.py"><code>-    with psycopg.connect(**CONN_INFO) as conn:
-+    with pool.connection() as conn:</code></pre>
-<p><strong>딱 한 줄 차이입니다.</strong> <code>with</code> 블록이 끝나면 연결이 닫히는 게 아니라 <strong>풀로 돌아가서 다음 요청을 기다립니다.</strong> <code>/health</code>와 <code>/profile</code> 두 군데를 똑같이 바꿉니다.</p>
-
-<details class="tb">
-<summary>
-  <span class="tb-lab">TROUBLESHOOTING</span>
-  <span class="tb-tit"><code>'uvicorn'은(는) 내부 또는 외부 명령...이 아닙니다</code></span>
-</summary>
-<div class="tb-body">
-<h4>증상</h4>
-<pre><code>C:\...\backend&gt;uvicorn main:app --reload --port 8080
-'uvicorn'은(는) 내부 또는 외부 명령, 실행할 수 있는 프로그램, 또는
-배치 파일이 아닙니다.</code></pre>
-<h4>원인 — 가상환경이 활성화되지 않았습니다</h4>
-<p>프롬프트 맨 앞에 <strong><code>(.venv)</code> 가 없으면</strong> 이 상태입니다.</p>
-<p>바로 위에서 실행한 <code>pip install</code> 메시지를 보면 증거가 있습니다.</p>
-<pre><code>C:\Users\...\AppData\Local\Python\pythoncore-3.14-64\python.exe -m pip ...
-                    <span class="c">↑ 컴퓨터 전체 파이썬 (창고 밖)</span></code></pre>
-<p>패키지가 <code>.venv</code> 창고가 아니라 <strong>컴퓨터 전체 파이썬에 설치</strong>됐고, <code>uvicorn</code> 명령도 PATH에 없어서 못 찾는 것입니다.</p>
-<h4>해결 — 활성화부터</h4>
-<div class="cmd">
-  <div class="tabs">
-    <button class="tab" data-shell="cmd">cmd</button>
-    <button class="tab" data-shell="ps">PowerShell</button>
-    <button class="tab" data-shell="sh">macOS / Linux</button>
-  </div>
-  <pre data-shell="cmd"><code>.venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8080</code></pre>
-  <pre data-shell="ps"><code>.\.venv\Scripts\Activate.ps1
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8080</code></pre>
-  <pre data-shell="sh"><code>source .venv/bin/activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8080</code></pre>
-</div>
-<h4>또는 — 활성화 없이 창고를 직접 지목</h4>
-<div class="cmd">
-  <div class="tabs">
-    <button class="tab" data-shell="cmd">cmd</button>
-    <button class="tab" data-shell="ps">PowerShell</button>
-    <button class="tab" data-shell="sh">macOS / Linux</button>
-  </div>
-  <pre data-shell="cmd"><code>.venv\Scripts\python.exe -m pip install -r requirements.txt
-.venv\Scripts\python.exe -m uvicorn main:app --reload --port 8080</code></pre>
-  <pre data-shell="ps"><code>.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m uvicorn main:app --reload --port 8080</code></pre>
-  <pre data-shell="sh"><code>.venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m uvicorn main:app --reload --port 8080</code></pre>
-</div>
-<div class="box ok">
-  <p class="t">✅ 습관 하나로 끝납니다</p>
-  <p><strong>터미널을 새로 열면 항상 비활성 상태입니다.</strong> 명령을 치기 전에 <code>(.venv)</code> 가 있는지 보는 습관을 들이면 이 문제는 다시 안 생깁니다.</p>
-  <p>컴퓨터 전체에 잘못 깔린 패키지는 그냥 두셔도 됩니다. 용량만 조금 차지할 뿐 문제를 일으키지 않습니다.</p>
-</div>
-</div>
-</details>
-
-<details class="tb">
-<summary>
-  <span class="tb-lab">TROUBLESHOOTING</span>
-  <span class="tb-tit"><code>ModuleNotFoundError: No module named 'psycopg_pool'</code></span>
-</summary>
-<div class="tb-body">
-<h4>원인</h4>
-<p>위와 같은 문제입니다. <code>pip install</code>이 <strong>다른 파이썬에 설치</strong>했습니다. 또는 <code>requirements.txt</code>를 <code>psycopg[binary,pool]</code>로 바꾼 뒤 재설치를 안 했을 수도 있습니다.</p>
-<h4>해결</h4>
-<p><code>(.venv)</code> 확인 후 다시 설치하세요.</p>
-<pre><code>pip install -r requirements.txt</code></pre>
-<p>설치가 제대로 됐는지 확인:</p>
-<pre><code>pip show psycopg-pool</code></pre>
-</div>
-</details>
-
-<details class="tb">
-<summary>
-  <span class="tb-lab">TROUBLESHOOTING</span>
-  <span class="tb-tit"><code>404 — 프로필이 아직 없습니다</code></span>
-</summary>
-<div class="tb-body">
-<h4>원인</h4>
-<p>테이블은 만들어졌는데 <strong>데이터가 한 줄도 없습니다.</strong> <code>insert</code> 문을 빼먹었거나 실행이 안 된 경우입니다.</p>
-<h4>해결 — SQL Editor에서 확인</h4>
-<pre data-file="Supabase → SQL Editor"><code>select * from public.profile;</code></pre>
-<p><code>no rows</code>가 나오면 다시 넣으세요.</p>
-<pre data-file="Supabase → SQL Editor"><code>insert into public.profile (full_name, headline, summary)
-values ('내이름', '내 한 줄 소개', '조금 더 긴 소개글');</code></pre>
-<div class="box ok"><p class="t">✅ 이건 코드가 잘 동작한다는 증거입니다</p><p>404가 나왔다는 건 서버가 DB까지 잘 다녀왔다는 뜻입니다. 진짜로 데이터가 없었을 뿐이에요.</p></div>
-</div>
-</details>
-
-<h2 id="s7">7. 코드 전체 (<code>backend/main.py</code>)</h2>
+<h2 id="s6">2-6. 코드 전체 (<code>backend/main.py</code>)</h2>
 <pre data-file="backend/main.py"><code>import os
-from contextlib import asynccontextmanager
 from pathlib import Path
 
+import psycopg
 from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from psycopg.rows import dict_row
-from psycopg_pool import ConnectionPool
 
 <span class="c"># 어느 폴더에서 실행하든 backend/.env 를 찾도록 경로를 직접 지정한다.</span>
 load_dotenv(Path(__file__).parent / ".env")
@@ -727,21 +579,7 @@ CONN_INFO = {
     "password": os.environ["DB_PASSWORD"],
 }
 
-<span class="c"># 커넥션 풀: 연결을 미리 열어두고 요청마다 빌려준다.</span>
-<span class="c"># open=False 로 만들어 두고, 실제로 여는 것은 서버가 시작될 때(lifespan).</span>
-pool = ConnectionPool(kwargs=CONN_INFO, min_size=1, max_size=5, open=False)
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    <span class="c"># 서버가 켜질 때 실행된다. wait=True 라서 연결에 실패하면 여기서 바로 알 수 있다.</span>
-    pool.open(wait=True, timeout=10)
-    yield
-    <span class="c"># 서버가 꺼질 때 실행된다.</span>
-    pool.close()
-
-
-app = FastAPI(title="MyHub", lifespan=lifespan)
+app = FastAPI(title="MyHub")
 
 
 @app.get("/")
@@ -751,7 +589,7 @@ def root():
 
 @app.get("/health")
 def health():
-    with pool.connection() as conn:
+    with psycopg.connect(**CONN_INFO) as conn:
         with conn.cursor() as cur:
             cur.execute("select version()")
             version = cur.fetchone()[0]
@@ -761,7 +599,7 @@ def health():
 
 @app.get("/profile")
 def get_profile():
-    with pool.connection() as conn:
+    with psycopg.connect(**CONN_INFO) as conn:
         <span class="c"># dict_row: 결과를 튜플이 아니라 {컬럼명: 값} 형태로 받는다.</span>
         with conn.cursor(row_factory=dict_row) as cur:
             cur.execute(
@@ -781,7 +619,7 @@ def get_profile():
     <span class="c"># 나중에 다른 항목을 같이 내려줄 때 형태를 안 바꿔도 되기 때문이다.</span>
     return {"profile": row}</code></pre>
 
-<h2 id="s8">8. 이번에 배운 개념</h2>
+<h2 id="s7">2-7. 이번에 배운 개념</h2>
 <div class="tw"><table>
 <thead><tr><th>용어</th><th>한 줄 설명</th></tr></thead>
 <tbody>
@@ -792,13 +630,11 @@ def get_profile():
 <tr><td><strong>RLS</strong></td><td>행 단위 접근 제어. 켜면 기본이 "아무도 못 봄"</td></tr>
 <tr><td><strong><code>revoke</code></strong></td><td>이미 준 권한을 회수하는 명령</td></tr>
 <tr><td><strong><code>dict_row</code></strong></td><td>DB 결과를 튜플이 아니라 딕셔너리로 받게 하는 설정</td></tr>
-<tr><td><strong>커넥션 풀</strong></td><td>DB 연결을 미리 열어두고 빌려주고 반납받는 구조</td></tr>
-<tr><td><strong><code>lifespan</code></strong></td><td>서버가 켜질 때와 꺼질 때 실행할 코드를 지정하는 곳</td></tr>
 <tr><td><strong>404</strong></td><td>"그런 건 없다"는 HTTP 응답 코드</td></tr>
 </tbody>
 </table></div>
 
-<h2 id="s9">9. 다음 단계 (Step 3)</h2>
+<h2 id="s8">2-8. 다음 단계 (Step 3)</h2>
 <div class="box ok">
   <p class="t">🎯 다음 목표</p>
   <p><strong>JSON 글자를 사람이 보는 이력서 페이지로 만듭니다.</strong> 여기부터 비로소 "웹사이트"가 됩니다.</p>
